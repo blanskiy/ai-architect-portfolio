@@ -118,6 +118,12 @@ Build an end-to-end AI pipeline combining **Databricks**, **Azure OpenAI**, and 
 
 **Stack:**  
 Databricks + Delta + Unity Catalog + Feature Store + Azure OpenAI + LangChain
+![AI Lifecycle Overview](./assets/AI_Lifecycle_Overview.png)
+
+<sub>
+The AI Orchestration Layer connects data pipelines, model lifecycle, and LLM interfaces into a unified feedback loop — 
+enabling continuous learning and intelligence from **data → model → insight → action**.
+</sub>
 
 Deliverables:
 - `capstone_databricks_ai_project/`
