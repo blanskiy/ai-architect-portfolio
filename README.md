@@ -123,14 +123,22 @@ Deliverables:
 - `capstone_databricks_ai_project/`
 - Architecture diagram: `diagrams/databricks_ai_architecture.png`
 ![Databricks AI Architecture](./assets/databricks_ai_architecture.png)
-
+<sub>
+This diagram shows how **Databricks Lakehouse AI** unifies data ingestion, Delta processing, and ML workflows
+within a single platform. **Mr. Bricks** accelerates development through intelligent code suggestions and pipeline automation,
+while **Feature Store**, **Model Serving**, and **Unity Catalog** enable a governed, end-to-end AI lifecycle from raw data to deployed model.
+</sub>
 ---
 ### ☁️ End-to-End AI Architecture (Azure ML + Databricks + OpenAI)
 
 Below is a high-level architecture connecting Azure ML, Databricks, and Azure OpenAI for data → model → API → insights workflow.
 
 ![Azure Databricks OpenAI Architecture](./assets/azure_databricks_openai_architecture.png)
-
+<sub>
+This end-to-end pipeline illustrates seamless integration between **Azure ML**, **Databricks**, and **Azure OpenAI**.
+Data flows from **ADLS** into Databricks for transformation and feature engineering, with models trained and tracked in **MLflow** and deployed via **Azure ML endpoints**.
+**Azure OpenAI** adds LLM capabilities — embeddings, RAG, and generative APIs — extending analytics into intelligent applications and dashboards.
+</sub>
 ## 🧠 Notes
 See [`notes/`](./notes/) for conceptual summaries:
 - `databricks_ai_notes.md` – overview of Databricks AI platform
