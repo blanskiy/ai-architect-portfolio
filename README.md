@@ -101,6 +101,14 @@ The diagram below shows how Unity Catalog, Microsoft Purview, and ABAC policies 
 **centralized data governance, lineage, and fine-grained access control** across Databricks, Azure ML, and Power BI.
 
 ![Governance View Diagram](./assets/Governance_view_Diagram.png)
+<sub>
+This governance architecture illustrates how **Unity Catalog** acts as the central control plane for all
+data, ML, and AI assets across the Lakehouse, enforcing **attribute-based access control (ABAC)** policies 
+for fine-grained permissions. **Microsoft Purview** complements it by providing **enterprise-wide data 
+discovery, lineage, and classification**, ensuring regulatory compliance and visibility from ingestion to 
+analytics. Together, Unity Catalog + Purview establish an **end-to-end governance fabric** that secures data
+flows across **Databricks, Azure ML, and Power BI**, aligning with modern **zero-trust and data sovereignty principles**.
+</sub>
 
 ---
 
