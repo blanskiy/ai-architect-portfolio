@@ -95,6 +95,12 @@ Deliverable: `databricks_model_serving_demo.ipynb`
 - Apply **Unity Catalog** for fine-grained data access and lineage tracking (ABAC style).  
 
 Deliverables: `feature_store_demo.ipynb`, `unity_catalog_governance.md`
+#### 🧭 Governance View: Unity Catalog + Purview + ABAC
+
+The diagram below shows how Unity Catalog, Microsoft Purview, and ABAC policies work together to provide
+**centralized data governance, lineage, and fine-grained access control** across Databricks, Azure ML, and Power BI.
+
+![Governance View Diagram](./assets/Governance_view_Diagram.png)
 
 ---
 
