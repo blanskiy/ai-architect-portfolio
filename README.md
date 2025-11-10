@@ -111,6 +111,11 @@ Deliverables:
 ![Databricks AI Architecture](./assets/databricks_ai_architecture.png)
 
 ---
+### ☁️ End-to-End AI Architecture (Azure ML + Databricks + OpenAI)
+
+Below is a high-level architecture connecting Azure ML, Databricks, and Azure OpenAI for data → model → API → insights workflow.
+
+![Azure Databricks OpenAI Architecture](./assets/azure_databricks_openai_architecture.png)
 
 ## 🧠 Notes
 See [`notes/`](./notes/) for conceptual summaries:
