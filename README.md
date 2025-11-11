@@ -27,7 +27,7 @@ Target roles: **AI Architect / Principal Solutions Architect / ML Platform Engin
 - `02-deep-learning-cnn` – build & train MLP/CNN with GPU benchmarking  
 
 Deliverables: `ml_basics.ipynb`, `cnn_transfer_learning.ipynb`
-
+📘 [projects/01-ml-basics/notebooks/ml_basics.ipynb](./projects/01-ml-basics/notebooks/ml_basics.ipynb)
 ---
 
 ## 🤖 Phase 2 – Month 2: NLP & LLMs on Azure
