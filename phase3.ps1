@@ -1,4 +1,76 @@
-# Bruce Lanskiy - AI Architect Portfolio
+# ============================================================================
+# PHASE 3: Create Main Portfolio README
+# ============================================================================
+# This script creates a compelling main README.md for your portfolio
+# Run this AFTER Phase 1 and Phase 2
+# ============================================================================
+
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "PHASE 3: Creating Main Portfolio README" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Verify we're in the right directory
+if (-not (Test-Path ".git")) {
+    Write-Host "ERROR: Not in a git repository root!" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Current directory: $(Get-Location)" -ForegroundColor Green
+Write-Host ""
+
+# ============================================================================
+# Backup existing README if it exists
+# ============================================================================
+
+if (Test-Path "README.md") {
+    $backupName = "README.backup.$(Get-Date -Format 'yyyyMMdd-HHmmss').md"
+    Write-Host "Backing up existing README.md to $backupName..." -ForegroundColor Yellow
+    Copy-Item "README.md" $backupName
+    Write-Host "  Backup created" -ForegroundColor Green
+    Write-Host ""
+}
+
+# ============================================================================
+# Get user input for personalization
+# ============================================================================
+
+Write-Host "Let's personalize your portfolio README!" -ForegroundColor Yellow
+Write-Host ""
+
+$name = Read-Host "Enter your full name (or press Enter for placeholder)"
+if ([string]::IsNullOrWhiteSpace($name)) {
+    $name = "[Your Name]"
+}
+
+$linkedin = Read-Host "Enter your LinkedIn URL (or press Enter to skip)"
+if ([string]::IsNullOrWhiteSpace($linkedin)) {
+    $linkedin = "[Your LinkedIn URL]"
+}
+
+$email = Read-Host "Enter your professional email (or press Enter to skip)"
+if ([string]::IsNullOrWhiteSpace($email)) {
+    $email = "[your.email@example.com]"
+}
+
+Write-Host ""
+Write-Host "Current focus? (Example: Building production RAG systems)" -ForegroundColor Yellow
+$currentFocus = Read-Host "Current focus"
+if ([string]::IsNullOrWhiteSpace($currentFocus)) {
+    $currentFocus = "Following a 4-month intensive program to master production AI systems for Microsoft Azure"
+}
+
+$todayDate = Get-Date -Format "MMMM d, yyyy"
+
+Write-Host ""
+Write-Host "Creating README.md..." -ForegroundColor Yellow
+
+# ============================================================================
+# Create main README content
+# ============================================================================
+
+$readmeContent = @"
+# $name - AI Architect Portfolio
 
 > Production-grade AI systems for Microsoft Azure ecosystem
 
@@ -19,7 +91,7 @@ Azure ML • Azure OpenAI • Databricks • LLMs and RAG • MLOps • Distribu
 
 ## Current Focus
 
-Building production RAG systems, adopt lakehouse transformation to AI Lakehouse
+$currentFocus
 
 **Target Role**: Microsoft AI Architect
 
@@ -259,8 +331,8 @@ Building production RAG systems, adopt lakehouse transformation to AI Lakehouse
 
 ## Contact and Links
 
-**Email**: blanskiy@gmail.com  
-**LinkedIn**: https://www.linkedin.com/in/bruce-lanskiy-773aa5  
+**Email**: $email  
+**LinkedIn**: $linkedin  
 **GitHub**: https://github.com/[your-username]  
 **Blog**: Coming Soon  
 
@@ -277,7 +349,7 @@ Building production RAG systems, adopt lakehouse transformation to AI Lakehouse
 
 ## Recent Updates
 
-**November 12, 2025**: Portfolio restructure complete. Added missing critical projects. Enhanced documentation for existing projects with ENHANCEMENT.md checklists.
+**$todayDate**: Portfolio restructure complete. Added missing critical projects. Enhanced documentation for existing projects with ENHANCEMENT.md checklists.
 
 **Next Milestones**:
 - Complete High-Throughput Serving project (Month 1, Week 4)
@@ -315,8 +387,81 @@ By the end of this journey, I will be able to:
 
 ---
 
-**Last Updated**: November 12, 2025
+**Last Updated**: $todayDate
 
 ---
 
 *Open to opportunities in Microsoft AI Architect roles*
+"@
+
+# ============================================================================
+# Write the README file
+# ============================================================================
+
+Set-Content -Path "README.md" -Value $readmeContent
+Write-Host "  Created: README.md" -ForegroundColor Green
+Write-Host ""
+
+# ============================================================================
+# Create quick update helper script
+# ============================================================================
+
+$updateScript = @'
+# Quick README Update Script
+$date = Get-Date -Format "MMMM d, yyyy"
+Write-Host "What did you accomplish today?" -ForegroundColor Yellow
+$update = Read-Host "Update"
+
+if ([string]::IsNullOrWhiteSpace($update)) {
+    Write-Host "No update provided. Exiting." -ForegroundColor Red
+    exit
+}
+
+Write-Host "Adding update to README.md..." -ForegroundColor Yellow
+$readme = Get-Content "README.md" -Raw
+$newUpdate = "**$date**: $update"
+
+if ($readme -match "## Recent Updates") {
+    $readme = $readme -replace "(## Recent Updates\s+)", "`$1$newUpdate`n`n"
+    Set-Content "README.md" $readme -NoNewline
+    Write-Host "  README updated!" -ForegroundColor Green
+} else {
+    Write-Host "  Could not find Recent Updates section" -ForegroundColor Yellow
+}
+'@
+
+Set-Content -Path "update_readme.ps1" -Value $updateScript
+Write-Host "  Created: update_readme.ps1" -ForegroundColor Green
+Write-Host ""
+
+# ============================================================================
+# Summary
+# ============================================================================
+
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "PHASE 3 COMPLETE!" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Your portfolio README.md is ready!" -ForegroundColor Green
+Write-Host ""
+Write-Host "What was created:" -ForegroundColor Yellow
+Write-Host "  Main README.md with your info" -ForegroundColor Green
+Write-Host "  Featured projects section" -ForegroundColor Green
+Write-Host "  Skills and technologies breakdown" -ForegroundColor Green
+Write-Host "  Project metrics summary table" -ForegroundColor Green
+Write-Host "  Quick update script (update_readme.ps1)" -ForegroundColor Green
+Write-Host ""
+Write-Host "Next Steps:" -ForegroundColor Yellow
+Write-Host "  1. Review README.md and customize if needed" -ForegroundColor White
+Write-Host "  2. Add your actual GitHub username and links" -ForegroundColor White
+Write-Host "  3. Take a screenshot for LinkedIn!" -ForegroundColor White
+Write-Host "  4. Start working on critical projects" -ForegroundColor White
+Write-Host "  5. Use update_readme.ps1 to log progress" -ForegroundColor White
+Write-Host ""
+Write-Host "Commit your changes:" -ForegroundColor Yellow
+Write-Host "  git add ." -ForegroundColor White
+Write-Host "  git commit -m 'Portfolio restructure complete'" -ForegroundColor White
+Write-Host "  git push" -ForegroundColor White
+Write-Host ""
+Write-Host "Your portfolio is now structured for success!" -ForegroundColor Cyan
+Write-Host ""
