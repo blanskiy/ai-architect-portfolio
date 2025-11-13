@@ -261,7 +261,7 @@ Building production RAG systems, adopt lakehouse transformation to AI Lakehouse
 
 **Email**: blanskiy@gmail.com  
 **LinkedIn**: https://www.linkedin.com/in/bruce-lanskiy-773aa5  
-**GitHub**: https://github.com/[your-username]  
+**GitHub**: https://github.com/blanskiy  
 **Blog**: Coming Soon  
 
 ---
