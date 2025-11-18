@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """FastAPI service for ResNet-50 model serving."""
+import sys
+import os
+# Add the src directory to Python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
@@ -10,6 +14,10 @@ from PIL import Image
 import io
 import time
 import logging
+from batch_manager import BatchManager
+import uuid
+
+
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +28,7 @@ request_count = 0
 success_count = 0
 error_count = 0
 total_latency = 0.0
+
 # Initialize FastAPI
 app = FastAPI(
     title="ResNet-50 Model Serving API",
@@ -30,6 +39,47 @@ app = FastAPI(
 # Global variables
 model = None
 preprocess = None
+
+# Add after the global variables section
+batch_manager = None
+
+@app.on_event("startup")
+async def load_model():
+    """Load model and start batch manager on application startup."""
+    global model, preprocess, batch_manager
+    
+    logger.info("Loading ResNet-50 model...")
+    start_time = time.time()
+    
+    # Load model
+    model = models.resnet50(pretrained=True)
+    model.eval()
+    
+    # Setup preprocessing
+    preprocess = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        ),
+    ])
+    
+    elapsed = time.time() - start_time
+    logger.info(f"Model loaded successfully in {elapsed:.2f} seconds")
+    
+    # Initialize and start batch manager
+    batch_manager = BatchManager(max_batch_size=8, max_wait_time=0.05)
+    batch_manager.start(model)
+    logger.info("Batch manager started")
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Cleanup on shutdown."""
+    if batch_manager:
+        batch_manager.stop()
+    logger.info("Shutdown complete")
 
 # ImageNet class labels (subset for demo)
 IMAGENET_CLASSES = {
@@ -91,52 +141,35 @@ async def health_check():
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    """
-    Predict image class.
-    
-    Args:
-        file: Image file (JPEG, PNG)
-    
-    Returns:
-        JSON with top 5 predictions and latency
-    """
+    """Predict image class using batched inference."""
     
     global request_count, success_count, error_count, total_latency
     
     request_count += 1
+    request_id = str(uuid.uuid4())[:8]  # Short unique ID
     
     if model is None:
         error_count += 1
-        raise HTTPException(
-            status_code=503, 
-            detail="Model not loaded. Please wait for startup to complete."
-        )
+        raise HTTPException(status_code=503, detail="Model not loaded")
     
     try:
-        # Start timing
         start_time = time.time()
         
         # Read and preprocess image
         contents = await file.read()
-        logger.info(f"Received file: {file.filename}, size: {len(contents)} bytes")
+        logger.info(f"[{request_id}] Received file: {file.filename}, size: {len(contents)} bytes")
         
-        # Open image
         image = Image.open(io.BytesIO(contents)).convert('RGB')
-        logger.info(f"Image opened successfully: size={image.size}, mode={image.mode}")
-        
-        # Preprocess
         input_tensor = preprocess(image)
-        input_batch = input_tensor.unsqueeze(0)
         
-        # Inference
-        with torch.no_grad():
-            output = model(input_batch)
+        # Add to batch and wait for result
+        logger.info(f"[{request_id}] Adding to batch queue")
+        output, inference_time = await batch_manager.add_to_batch(input_tensor, request_id)
         
         # Get top 5 predictions
-        probabilities = torch.nn.functional.softmax(output[0], dim=0)
+        probabilities = torch.nn.functional.softmax(output, dim=0)
         top5_prob, top5_catid = torch.topk(probabilities, 5)
         
-        # Format predictions
         predictions = []
         for i in range(5):
             class_id = top5_catid[i].item()
@@ -150,29 +183,29 @@ async def predict(file: UploadFile = File(...)):
                 "confidence": round(confidence, 4)
             })
         
-        # Calculate latency
-        latency_ms = (time.time() - start_time) * 1000
-        
-        # Track success
+        total_latency_ms = (time.time() - start_time) * 1000
         success_count += 1
-        total_latency += latency_ms
+        total_latency += total_latency_ms
         
-        logger.info(f"Prediction successful. Top class: {predictions[0]['class_name']}, Latency: {latency_ms:.2f}ms")
+        logger.info(f"[{request_id}] Success! Top: {predictions[0]['class_name']}, "
+                   f"Total latency: {total_latency_ms:.2f}ms, "
+                   f"Inference: {inference_time*1000:.2f}ms")
         
         return {
             "success": True,
             "predictions": predictions,
-            "latency_ms": round(latency_ms, 2),
-            "model": "ResNet-50"
+            "latency_ms": round(total_latency_ms, 2),
+            "inference_ms": round(inference_time * 1000, 2),
+            "request_id": request_id,
+            "model": "ResNet-50",
+            "batched": True
         }
         
     except Exception as e:
         error_count += 1
-        logger.error(f"Prediction error: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Prediction failed: {str(e)}"
-        )
+        logger.error(f"[{request_id}] Error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+    
 
 @app.get("/metrics")
 async def metrics():
