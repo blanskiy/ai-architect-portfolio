@@ -1,0 +1,15 @@
+fastapi==0.121.1
+uvicorn==0.33.0
+python-multipart==0.0.20
+torch==2.5.1
+torchvision==0.20.1
+pillow==12.0.0
+
+# Monitoring
+python-json-logger==4.0.0
+prometheus-client==0.23.1
+
+# Optional (for testing in container)
+requests==2.32.3
+aiohttp==3.13.2
+locust==2.42.3
