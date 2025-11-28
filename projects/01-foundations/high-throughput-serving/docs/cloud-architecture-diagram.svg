@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+  <defs>
+    <linearGradient id="azureGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0078D4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00BCF2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="containerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="redisGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#DC382D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF6B6B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="onnxGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1000" height="700" fill="#f8fafc"/>
+  
+  <!-- Title -->
+  <text x="500" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#1e293b">High-Throughput ML Serving System - Cloud Architecture</text>
+  <text x="500" y="65" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#64748b">Production Deployment on Azure Container Apps</text>
+  
+  <!-- Client Section -->
+  <g transform="translate(50, 100)">
+    <rect x="0" y="0" width="120" height="80" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2" filter="url(#shadow)"/>
+    <text x="60" y="35" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#334155">👤 Client</text>
+    <text x="60" y="55" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#64748b">HTTP Request</text>
+    <text x="60" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">POST /predict</text>
+  </g>
+  
+  <!-- Arrow from Client to Azure -->
+  <path d="M 170 140 L 230 140" stroke="#64748b" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+  </defs>
+  
+  <!-- Azure Cloud Box -->
+  <g transform="translate(240, 80)">
+    <rect x="0" y="0" width="700" height="550" rx="15" fill="white" stroke="#0078D4" stroke-width="3" filter="url(#shadow)"/>
+    <rect x="0" y="0" width="700" height="45" rx="15" fill="url(#azureGradient)"/>
+    <rect x="0" y="30" width="700" height="15" fill="url(#azureGradient)"/>
+    <text x="350" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">☁️ Microsoft Azure (West US 2)</text>
+  </g>
+  
+  <!-- Container Apps Environment -->
+  <g transform="translate(270, 145)">
+    <rect x="0" y="0" width="640" height="120" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" stroke-dasharray="5,5"/>
+    <text x="320" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#1e40af">Azure Container Apps Environment</text>
+    <text x="320" y="42" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#3b82f6">ml-portfolio-env | Auto-scaling 1-10 replicas</text>
+    
+    <!-- Container App -->
+    <rect x="20" y="55" width="600" height="55" rx="8" fill="url(#containerGradient)" filter="url(#shadow)"/>
+    <text x="320" y="80" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">🐳 resnet-api Container</text>
+    <text x="320" y="98" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#dbeafe">2 vCPU | 4GB Memory | Port 8000</text>
+  </g>
+  
+  <!-- FastAPI Application Box -->
+  <g transform="translate(270, 285)">
+    <rect x="0" y="0" width="640" height="320" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="2"/>
+    <text x="320" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#854d0e">⚡ FastAPI Application</text>
+    
+    <!-- Request Handler -->
+    <rect x="20" y="45" width="140" height="70" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+    <text x="90" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#92400e">Request</text>
+    <text x="90" y="88" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#92400e">Handler</text>
+    <text x="90" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#b45309">Async I/O</text>
+    
+    <!-- Arrow -->
+    <path d="M 165 80 L 195 80" stroke="#f59e0b" stroke-width="2" fill="none" marker-end="url(#arrowOrange)"/>
+    <defs>
+      <marker id="arrowOrange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#f59e0b"/>
+      </marker>
+    </defs>
+    
+    <!-- Redis Cache -->
+    <rect x="200" y="45" width="140" height="70" rx="8" fill="url(#redisGradient)" filter="url(#shadow)"/>
+    <text x="270" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">Redis Cache</text>
+    <text x="270" y="88" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#fecaca">80% Hit Rate</text>
+    <text x="270" y="103" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#fecaca">Content Hash</text>
+    
+    <!-- Arrow -->
+    <path d="M 345 80 L 375 80" stroke="#059669" stroke-width="2" fill="none" marker-end="url(#arrowGreen)"/>
+    <defs>
+      <marker id="arrowGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#059669"/>
+      </marker>
+    </defs>
+    
+    <!-- Batch Manager -->
+    <rect x="380" y="45" width="140" height="70" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="2" filter="url(#shadow)"/>
+    <text x="450" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#065f46">Batch</text>
+    <text x="450" y="88" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#065f46">Manager</text>
+    <text x="450" y="103" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#047857">Dynamic Batching</text>
+    
+    <!-- Arrow -->
+    <path d="M 525 80 L 555 80" stroke="#7c3aed" stroke-width="2" fill="none" marker-end="url(#arrowPurple)"/>
+    <defs>
+      <marker id="arrowPurple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#7c3aed"/>
+      </marker>
+    </defs>
+    
+    <!-- ONNX Runtime -->
+    <rect x="480" y="45" width="140" height="70" rx="8" fill="url(#onnxGradient)" filter="url(#shadow)"/>
+    <text x="550" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">ONNX</text>
+    <text x="550" y="88" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">Runtime</text>
+    <text x="550" y="103" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#d1fae5">1.89× Faster</text>
+    
+    <!-- ResNet-50 Model -->
+    <g transform="translate(200, 140)">
+      <rect x="0" y="0" width="240" height="90" rx="10" fill="#faf5ff" stroke="#7c3aed" stroke-width="2" filter="url(#shadow)"/>
+      <text x="120" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#5b21b6">🧠 ResNet-50</text>
+      <text x="120" y="45" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#7c3aed">ImageNet Pre-trained</text>
+      <text x="120" y="62" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#8b5cf6">1000 Classes</text>
+      <text x="120" y="80" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#8b5cf6">~130ms Inference</text>
+    </g>
+    
+    <!-- Arrow from ONNX to Model -->
+    <path d="M 550 115 L 550 135 L 420 135 L 420 150" stroke="#7c3aed" stroke-width="2" fill="none" marker-end="url(#arrowPurple)"/>
+    
+    <!-- Response Box -->
+    <g transform="translate(200, 250)">
+      <rect x="0" y="0" width="240" height="55" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="2" filter="url(#shadow)"/>
+      <text x="120" y="22" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#065f46">📤 JSON Response</text>
+      <text x="120" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#047857">predictions, confidence, latency_ms</text>
+    </g>
+  </g>
+  
+  <!-- Azure Container Registry -->
+  <g transform="translate(760, 550)">
+    <rect x="0" y="0" width="150" height="70" rx="8" fill="#f0f9ff" stroke="#0078D4" stroke-width="2" filter="url(#shadow)"/>
+    <text x="75" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#0078D4">📦 Azure ACR</text>
+    <text x="75" y="42" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#0284c7">mlportfolioacr</text>
+    <text x="75" y="58" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#0284c7">resnet-serving:latest</text>
+  </g>
+  
+  <!-- Live URL Box -->
+  <g transform="translate(280, 640)">
+    <rect x="0" y="0" width="450" height="45" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2" filter="url(#shadow)"/>
+    <text x="225" y="18" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#166534">🌐 Live Production URL</text>
+    <text x="225" y="36" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#15803d">https://resnet-api.mangobay-4d613d45.westus2.azurecontainerapps.io</text>
+  </g>
+  
+  <!-- Performance Stats -->
+  <g transform="translate(50, 480)">
+    <rect x="0" y="0" width="160" height="180" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="2" filter="url(#shadow)"/>
+    <text x="80" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#854d0e">📊 Metrics</text>
+    <line x1="10" y1="35" x2="150" y2="35" stroke="#eab308" stroke-width="1"/>
+    <text x="15" y="55" font-family="Arial, sans-serif" font-size="10" fill="#92400e">Speedup: 1.89×</text>
+    <text x="15" y="75" font-family="Arial, sans-serif" font-size="10" fill="#92400e">Cache: 80%</text>
+    <text x="15" y="95" font-family="Arial, sans-serif" font-size="10" fill="#92400e">Throughput: 7 RPS</text>
+    <text x="15" y="115" font-family="Arial, sans-serif" font-size="10" fill="#92400e">Latency: ~130ms</text>
+    <text x="15" y="135" font-family="Arial, sans-serif" font-size="10" fill="#92400e">CPU: 2 vCPU</text>
+    <text x="15" y="155" font-family="Arial, sans-serif" font-size="10" fill="#92400e">Memory: 4GB</text>
+    <text x="15" y="175" font-family="Arial, sans-serif" font-size="10" fill="#92400e">Region: West US 2</text>
+  </g>
+</svg>
