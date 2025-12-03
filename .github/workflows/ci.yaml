@@ -55,8 +55,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ${{ env.WORKING_DIR }}
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
+          pip install -r requirements-ci.txt
 
       - name: Run tests
         run: |
@@ -107,4 +106,4 @@ jobs:
       - name: Check dependencies for vulnerabilities
         run: |
           cd ${{ env.WORKING_DIR }}
-          safety check -r requirements.txt || echo "Security scan completed"
+          safety check -r requirements-ci.txt || echo "Security scan completed"
