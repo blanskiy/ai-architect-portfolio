@@ -1,0 +1,19 @@
+
+Model Summary
+=============
+Model: ResNet-50
+Variant: onnx
+Parameters: 25,557,032
+Size: 97.49 MB
+
+Performance
+===========
+Mean Latency: 74.09 ms
+Min Latency: 69.27 ms
+Max Latency: 80.52 ms
+Throughput: 13.50 RPS
+
+Accuracy (ImageNet)
+==================
+Top-1: 76.13%
+Top-5: 92.86%

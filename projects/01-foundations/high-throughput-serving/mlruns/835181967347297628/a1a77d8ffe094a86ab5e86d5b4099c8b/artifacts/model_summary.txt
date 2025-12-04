@@ -1,0 +1,19 @@
+
+Model Summary
+=============
+Model: ResNet-50
+Variant: pytorch
+Parameters: 25,557,032
+Size: 97.49 MB
+
+Performance
+===========
+Mean Latency: 78.40 ms
+Min Latency: 70.36 ms
+Max Latency: 87.83 ms
+Throughput: 12.75 RPS
+
+Accuracy (ImageNet)
+==================
+Top-1: 76.13%
+Top-5: 92.86%

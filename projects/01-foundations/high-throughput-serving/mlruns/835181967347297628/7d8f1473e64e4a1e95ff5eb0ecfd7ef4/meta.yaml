@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/blans/source/repos/ai-architect-portfolio/projects/01-foundations/high-throughput-serving/mlruns/835181967347297628/7d8f1473e64e4a1e95ff5eb0ecfd7ef4/artifacts
+end_time: 1764787220669
+entry_point_name: ''
+experiment_id: '835181967347297628'
+lifecycle_stage: active
+run_id: 7d8f1473e64e4a1e95ff5eb0ecfd7ef4
+run_name: onnx_bs1_104013
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1764787213836
+status: 3
+tags: []
+user_id: blans

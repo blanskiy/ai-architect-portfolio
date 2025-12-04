@@ -1,0 +1,6 @@
+artifact_location: file:///C:/Users/blans/source/repos/ai-architect-portfolio/projects/01-foundations/high-throughput-serving/mlruns/835181967347297628
+creation_time: 1764787192441
+experiment_id: '835181967347297628'
+last_update_time: 1764787192441
+lifecycle_stage: active
+name: resnet50-image-classification

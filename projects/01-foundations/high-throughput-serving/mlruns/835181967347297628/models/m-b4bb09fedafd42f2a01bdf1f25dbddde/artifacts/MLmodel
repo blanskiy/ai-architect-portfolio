@@ -1,0 +1,23 @@
+artifact_path: file:///C:/Users/blans/source/repos/ai-architect-portfolio/projects/01-foundations/high-throughput-serving/mlruns/835181967347297628/models/m-b4bb09fedafd42f2a01bdf1f25dbddde/artifacts
+flavors:
+  python_function:
+    config:
+      device: null
+    data: data
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.pytorch
+    pickle_module_name: mlflow.pytorch.pickle_module
+    python_version: 3.10.11
+  pytorch:
+    code: null
+    model_data: data
+    pytorch_version: 2.9.0+cpu
+mlflow_version: 3.6.0
+model_id: m-b4bb09fedafd42f2a01bdf1f25dbddde
+model_size_bytes: 102551119
+model_uuid: m-b4bb09fedafd42f2a01bdf1f25dbddde
+prompts: null
+run_id: 7d8f1473e64e4a1e95ff5eb0ecfd7ef4
+utc_time_created: '2025-12-03 18:40:15.387705'

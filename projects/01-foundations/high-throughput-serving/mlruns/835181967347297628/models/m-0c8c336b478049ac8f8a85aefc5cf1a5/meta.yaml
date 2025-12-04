@@ -1,0 +1,10 @@
+artifact_location: file:///C:/Users/blans/source/repos/ai-architect-portfolio/projects/01-foundations/high-throughput-serving/mlruns/835181967347297628/models/m-0c8c336b478049ac8f8a85aefc5cf1a5/artifacts
+creation_timestamp: 1764787195454
+experiment_id: '835181967347297628'
+last_updated_timestamp: 1764787206818
+model_id: m-0c8c336b478049ac8f8a85aefc5cf1a5
+model_type: null
+name: model
+source_run_id: 30483b4ba7d848acb2fed40c08bd1f2a
+status: 2
+status_message: null

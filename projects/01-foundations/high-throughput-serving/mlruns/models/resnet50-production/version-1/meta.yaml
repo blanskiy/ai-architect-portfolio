@@ -1,0 +1,15 @@
+creation_timestamp: 1764809366892
+current_stage: None
+deployment_job_state: null
+description: ''
+last_updated_timestamp: 1764809366892
+model_id: m-b4bb09fedafd42f2a01bdf1f25dbddde
+name: resnet50-production
+run_id: 7d8f1473e64e4a1e95ff5eb0ecfd7ef4
+run_link: ''
+source: models:/m-b4bb09fedafd42f2a01bdf1f25dbddde
+status: READY
+status_message: null
+storage_location: file:///C:/Users/blans/source/repos/ai-architect-portfolio/projects/01-foundations/high-throughput-serving/mlruns/835181967347297628/models/m-b4bb09fedafd42f2a01bdf1f25dbddde/artifacts
+user_id: null
+version: 1

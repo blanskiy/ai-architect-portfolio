@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/blans/source/repos/ai-architect-portfolio/projects/01-foundations/high-throughput-serving/mlruns/835181967347297628/a1a77d8ffe094a86ab5e86d5b4099c8b/artifacts
+end_time: 1764787213827
+entry_point_name: ''
+experiment_id: '835181967347297628'
+lifecycle_stage: active
+run_id: a1a77d8ffe094a86ab5e86d5b4099c8b
+run_name: pytorch_bs4_104006
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1764787206872
+status: 3
+tags: []
+user_id: blans

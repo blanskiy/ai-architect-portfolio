@@ -1,0 +1,46 @@
+# Canary Deployment for ResNet API
+# Runs v2 alongside v1 with traffic splitting
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resnet-api-canary
+  labels:
+    app: resnet-api
+    version: v2
+    track: canary
+spec:
+  replicas: 1  # Small number for canary
+  selector:
+    matchLabels:
+      app: resnet-api
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: resnet-api
+        version: v2
+        track: canary
+    spec:
+      containers:
+      - name: resnet-api
+        image: resnet-serving:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MODEL_VERSION
+          value: "v2-canary"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
