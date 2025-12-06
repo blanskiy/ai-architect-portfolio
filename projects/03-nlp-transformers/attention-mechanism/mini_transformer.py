@@ -244,7 +244,7 @@ def demo_self_attention():
     plt.ylabel('Encoding Value')
     plt.legend([f'Dim {i}' for i in range(20)], ncol=4, fontsize=8)
     plt.tight_layout()
-    plt.savefig('/mnt/user-data/outputs/positional_encoding.png', dpi=150, bbox_inches='tight')
+    plt.savefig('positional_encoding.png', dpi=150, bbox_inches='tight')
     print("Saved positional encoding visualization!")
     
     # Step 3: Apply self-attention
@@ -259,7 +259,7 @@ def demo_self_attention():
     # Step 4: Visualize attention patterns
     print(f"\n{'Step 4: Visualize Attention':-^70}")
     visualize_attention(attention_weights, tokens)
-    plt.savefig('/mnt/user-data/outputs/attention_single_head.png', dpi=150, bbox_inches='tight')
+    plt.savefig('attention_single_head.png', dpi=150, bbox_inches='tight')
     print("Saved single-head attention visualization!")
     
     # Analyze which words "it" attends to
@@ -330,7 +330,7 @@ def demo_multi_head_attention():
     plt.suptitle('Multi-Head Attention Patterns (8 heads)', 
                  fontsize=16, fontweight='bold', y=1.02)
     plt.tight_layout()
-    plt.savefig('/mnt/user-data/outputs/attention_multi_head.png', dpi=150, bbox_inches='tight')
+    plt.savefig('attention_multi_head.png', dpi=150, bbox_inches='tight')
     print("\nSaved multi-head attention visualization!")
     
     # Analyze what different heads learn
