@@ -1,0 +1,178 @@
+
+╔══════════════════════════════════════════════════════════════════════╗
+║              PROMPT ENGINEERING CHEAT SHEET                          ║
+║                    Interview Ready!                                  ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ 1. ZERO-SHOT PROMPTING                                               │
+├──────────────────────────────────────────────────────────────────────┤
+│ When: Simple tasks, clear instructions                               │
+│ Formula: [Task] + [Context] + [Format]                               │
+│                                                                       │
+│ Example:                                                              │
+│ "Classify the sentiment as positive/negative/neutral.                │
+│  Review: 'Great product!'                                            │
+│  Sentiment:"                                                          │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ 2. FEW-SHOT PROMPTING                                                │
+├──────────────────────────────────────────────────────────────────────┤
+│ When: Complex tasks, specific formats, domain-specific               │
+│ Formula: [Task] + [3-5 Examples] + [New Input]                       │
+│                                                                       │
+│ Example:                                                              │
+│ "Extract names in JSON format.                                       │
+│  Text: 'Alice met Bob' → ['Alice', 'Bob']                            │
+│  Text: 'No one came' → []                                            │
+│  Text: 'John and Mary' → ['John', 'Mary']                            │
+│  Now: 'Sarah called Mike' → "                                        │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ 3. CHAIN-OF-THOUGHT (CoT)                                            │
+├──────────────────────────────────────────────────────────────────────┤
+│ When: Math, logic, multi-step reasoning                              │
+│ Magic Phrase: "Let's think step by step"                             │
+│                                                                       │
+│ Example:                                                              │
+│ "If I have 20 apples and give away 30%, then buy 5 more, how many    │
+│  do I have?                                                           │
+│  Let's solve step by step:"                                          │
+│                                                                       │
+│ Benefit: ↑ Accuracy by 20-40% on complex reasoning                   │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ 4. ROLE PROMPTING                                                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ When: Need domain expertise, specific perspective                    │
+│ Formula: "You are a [expert]" + [Context] + [Question]               │
+│                                                                       │
+│ Example:                                                              │
+│ "You are a Senior Azure Architect with 10 years experience.          │
+│  A client asks: Should we use Event Hubs or Service Bus?             │
+│  Consider cost, performance, and scalability."                       │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ 5. CONSTRAINED OUTPUT                                                │
+├──────────────────────────────────────────────────────────────────────┤
+│ When: Need parseable output, automation, APIs                        │
+│ Formula: "Respond ONLY in [format]" + [Template] + [Task]            │
+│                                                                       │
+│ Example:                                                              │
+│ "Respond ONLY with valid JSON:                                       │
+│  { 'sentiment': 'positive'|'negative'|'neutral',                     │
+│    'confidence': 0.0-1.0 }                                           │
+│  Review: 'Amazing product!' → "                                      │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ 6. TEMPERATURE CONTROL                                               │
+├──────────────────────────────────────────────────────────────────────┤
+│ Scale: 0.0 (deterministic) → 1.0 (creative)                          │
+│                                                                       │
+│ 0.0-0.3: Classification, extraction, factual Q&A                     │
+│ 0.4-0.7: General chat, summaries, balanced tasks                     │
+│ 0.8-1.0: Creative writing, brainstorming, naming                     │
+│                                                                       │
+│ Pro Tip: Start at 0.0 for production systems, then adjust up         │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ THE 5 C's OF GOOD PROMPTS                                            │
+├──────────────────────────────────────────────────────────────────────┤
+│ ✓ CLEAR     - Specific task and expected output                      │
+│ ✓ CONCISE   - Only necessary information                             │
+│ ✓ CONTEXTUAL - Relevant background and constraints                   │
+│ ✓ CONSTRAINED - Defined output format                                │
+│ ✓ COMPLETE  - All required information included                      │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ SYSTEM MESSAGES (Azure OpenAI)                                       │
+├──────────────────────────────────────────────────────────────────────┤
+│ Purpose: Set global behavior for entire conversation                 │
+│                                                                       │
+│ Example:                                                              │
+│ {                                                                     │
+│   "role": "system",                                                   │
+│   "content": "You are a helpful Azure architect. Always provide      │
+│               code examples using Azure services. Be concise."       │
+│ }                                                                     │
+│                                                                       │
+│ Pro Tip: System messages persist across all user messages            │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ COMMON PATTERNS                                                       │
+├──────────────────────────────────────────────────────────────────────┤
+│ Classification:    Zero-shot + temp=0.0 + constrained output         │
+│ Data Extraction:   Few-shot + temp=0.0 + JSON format                 │
+│ Code Review:       Role + constrained output + temp=0.2              │
+│ Math/Logic:        Chain-of-thought + temp=0.0                       │
+│ Creative Writing:  Role + temp=0.8-0.9                               │
+│ Summarization:     Zero-shot + temp=0.3 + word limit                 │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ DEBUGGING POOR OUTPUTS                                               │
+├──────────────────────────────────────────────────────────────────────┤
+│ Problem → Solution                                                    │
+│                                                                       │
+│ Inconsistent outputs     → Lower temperature                         │
+│ Ignores format           → Add few-shot examples                     │
+│ Poor reasoning           → Add "step by step"                        │
+│ Generic responses        → Add role and context                      │
+│ Wrong information        → Lower temp, be more specific              │
+│ Not following rules      → Use "You MUST" instead of "Please"        │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ INTERVIEW TALKING POINTS                                             │
+├──────────────────────────────────────────────────────────────────────┤
+│ "Prompt engineering is crucial because the same model can produce    │
+│  vastly different results based on how you phrase the input."        │
+│                                                                       │
+│ "I use few-shot prompting for tasks requiring specific formats,      │
+│  providing 3-5 examples to establish the pattern."                   │
+│                                                                       │
+│ "Chain-of-thought improves reasoning accuracy by 20-40% by           │
+│  encouraging the model to show its work step-by-step."               │
+│                                                                       │
+│ "Temperature control is critical - I use 0.0 for production          │
+│  systems requiring consistency, and 0.8+ for creative tasks."        │
+│                                                                       │
+│ "For automation, constrained output with JSON format ensures         │
+│  responses are parseable and can integrate with other systems."      │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ REAL-WORLD EXAMPLE                                                   │
+├──────────────────────────────────────────────────────────────────────┤
+│ Task: Build customer support bot for Azure services                  │
+│                                                                       │
+│ System Message (Role):                                               │
+│ "You are an expert Azure support assistant with 10 years experience. │
+│  Always provide documentation links. Be helpful but concise."        │
+│                                                                       │
+│ Temperature: 0.3                                                      │
+│ (Consistent but slightly flexible for natural responses)             │
+│                                                                       │
+│ Output Constraint:                                                    │
+│ "Always structure responses: [Answer] + [Docs Link] + [Next Steps]" │
+│                                                                       │
+│ Result: Consistent, helpful, parseable support responses             │
+└──────────────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════════════╗
+║ KEY METRICS TO KNOW                                                  ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ • Chain-of-thought: +20-40% accuracy on reasoning tasks              ║
+║ • Few-shot: 3-5 examples usually sufficient                          ║
+║ • Temperature 0.0: Fully deterministic (same output every time)      ║
+║ • System messages: Affect all subsequent user messages               ║
+║ • Token limits: GPT-4: 8K-32K, GPT-3.5: 4K-16K                       ║
+╚══════════════════════════════════════════════════════════════════════╝
