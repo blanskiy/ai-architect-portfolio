@@ -8,23 +8,29 @@
 # MAGIC 3. **Retrieves** relevant context
 # MAGIC 4. **Generates** informed responses using LLM
 # MAGIC 
-# MAGIC **Query Router Strategy:**
-# MAGIC - Product specs/features → `product_details_index`
-# MAGIC - Pricing/inventory/stock → `inventory_status_index`
-# MAGIC - Sales performance/trends → `sales_summary_index`
-# MAGIC - Executive summaries/recommendations → `executive_insights_index`
+# MAGIC **Catalog:** ai_systems
+# MAGIC **Schema:** stihl_silver
 
 # COMMAND ----------
 
-# MAGIC %pip install databricks-vectorsearch mlflow langchain langchain-community
+# MAGIC %pip install databricks-vectorsearch mlflow langchain langchain-community langchain-core --quiet
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Configuration & Imports
 
 # COMMAND ----------
 
 from databricks.vector_search.client import VectorSearchClient
 from langchain_community.chat_models import ChatDatabricks
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
-from langchain.schema.output_parser import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+from langchain_core.output_parsers import StrOutputParser
 import mlflow
 from mlflow.models import infer_signature
 import json
@@ -33,30 +39,33 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
-# Configuration
-CATALOG = "stihl"
-SCHEMA = "silver"
+# Configuration - Using existing ai_systems catalog
+CATALOG = "ai_systems"
+SCHEMA_SILVER = "stihl_silver"
 ENDPOINT_NAME = "stihl_inventory_endpoint"
 
 # Index names
 INDEXES = {
-    "product_details": f"{CATALOG}.{SCHEMA}.product_details_index",
-    "inventory_status": f"{CATALOG}.{SCHEMA}.inventory_status_index",
-    "sales_summary": f"{CATALOG}.{SCHEMA}.sales_summary_index",
-    "executive_insights": f"{CATALOG}.{SCHEMA}.executive_insights_index"
+    "product_details": f"{CATALOG}.{SCHEMA_SILVER}.product_details_index",
+    "inventory_status": f"{CATALOG}.{SCHEMA_SILVER}.inventory_status_index",
+    "sales_summary": f"{CATALOG}.{SCHEMA_SILVER}.sales_summary_index",
+    "executive_insights": f"{CATALOG}.{SCHEMA_SILVER}.executive_insights_index"
 }
 
-# LLM configuration
-LLM_ENDPOINT = "databricks-meta-llama-3-1-70b-instruct"  # Or your preferred model
+# LLM configuration - Update this based on your workspace's available endpoints
+# Common options: databricks-meta-llama-3-3-70b-instruct, databricks-dbrx-instruct, databricks-mixtral-8x7b-instruct
+LLM_ENDPOINT = "databricks-meta-llama-3-3-70b-instruct"
 
-print(f"Indexes: {INDEXES}")
+print(f"Catalog: {CATALOG}")
+print(f"Schema: {SCHEMA_SILVER}")
+print(f"Vector Search Endpoint: {ENDPOINT_NAME}")
+print(f"LLM Endpoint: {LLM_ENDPOINT}")
+print(f"Indexes: {list(INDEXES.keys())}")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## 1. Query Classification System
-# MAGIC 
-# MAGIC Automatic routing based on query analysis.
 
 # COMMAND ----------
 
@@ -78,27 +87,26 @@ class ClassifiedQuery:
 
 class QueryClassifier:
     """
-    Classifies incoming queries and routes to appropriate indexes.
-    Uses keyword matching + LLM for complex cases.
+    Classifies incoming queries to determine which Vector Search index to use.
+    Uses keyword matching with optional LLM fallback.
     """
     
-    # Keyword patterns for each query type
     PATTERNS = {
         QueryType.PRODUCT_DETAIL: {
             "keywords": [
-                "specs", "specifications", "features", "description",
-                "engine", "cc", "bar length", "weight", "power type",
-                "what is", "tell me about", "describe", "details",
-                "professional", "homeowner", "battery vs gas"
+                "spec", "specification", "feature", "detail", "describe",
+                "what is", "tell me about", "model", "engine", "power",
+                "weight", "bar length", "displacement", "cc", "voltage",
+                "battery", "fuel", "capacity", "warranty", "product"
             ],
-            "negative": ["price", "cost", "stock", "inventory", "sales", "revenue"]
+            "negative": ["price", "cost", "stock", "inventory", "sales", "sold"]
         },
         QueryType.INVENTORY_STATUS: {
             "keywords": [
-                "stock", "inventory", "available", "in stock", "out of stock",
-                "low stock", "reorder", "days of supply", "restocking",
-                "price", "pricing", "cost", "margin", "msrp",
-                "how much", "current price"
+                "stock", "inventory", "available", "quantity", "restock",
+                "low stock", "out of stock", "warehouse", "supply",
+                "price", "cost", "msrp", "margin", "pricing",
+                "days of supply", "reorder", "shortage"
             ],
             "negative": ["sales", "revenue", "sold", "best selling", "trend"]
         },
@@ -123,7 +131,7 @@ class QueryClassifier:
         }
     }
     
-    def __init__(self, use_llm_fallback: bool = True):
+    def __init__(self, use_llm_fallback: bool = False):
         self.use_llm_fallback = use_llm_fallback
         if use_llm_fallback:
             self.llm = ChatDatabricks(endpoint=LLM_ENDPOINT, temperature=0)
@@ -185,19 +193,17 @@ class QueryClassifier:
             )
     
     def _llm_classify(self, query: str) -> ClassifiedQuery:
-        """Use LLM for complex query classification"""
-        prompt = f"""Classify this inventory analytics query into one category:
+        """Use LLM as fallback for classification"""
+        prompt = f"""Classify this inventory/sales query into ONE category:
+- PRODUCT_DETAIL: Questions about product specifications, features, models
+- INVENTORY_STATUS: Questions about stock levels, pricing, availability
+- SALES_PERFORMANCE: Questions about sales data, revenue, trends
+- EXECUTIVE_INSIGHT: Strategic questions, recommendations, summaries
 
-Query: "{query}"
+Query: {query}
 
-Categories:
-1. PRODUCT_DETAIL - Questions about product specifications, features, descriptions
-2. INVENTORY_STATUS - Questions about stock levels, pricing, availability
-3. SALES_PERFORMANCE - Questions about sales data, revenue, trends
-4. EXECUTIVE_INSIGHT - Strategic questions, recommendations, summaries
-
-Respond with ONLY the category name (e.g., "PRODUCT_DETAIL")."""
-
+Respond with ONLY the category name (e.g., PRODUCT_DETAIL)."""
+        
         try:
             response = self.llm.invoke(prompt)
             category = response.content.strip().upper()
@@ -227,8 +233,10 @@ Respond with ONLY the category name (e.g., "PRODUCT_DETAIL")."""
                 reasoning=f"LLM error, defaulting: {str(e)[:50]}"
             )
 
+# COMMAND ----------
+
 # Test the classifier
-classifier = QueryClassifier(use_llm_fallback=False)  # Set True for LLM fallback
+classifier = QueryClassifier(use_llm_fallback=False)
 
 test_queries = [
     "What are the specs of the MS 271 chainsaw?",
@@ -245,16 +253,14 @@ print("=" * 60)
 for q in test_queries:
     result = classifier.classify(q)
     print(f"\nQuery: {q}")
-    print(f"  → Type: {result.query_type.value}")
-    print(f"  → Indexes: {[i.split('.')[-1] for i in result.indexes_to_search]}")
-    print(f"  → Confidence: {result.confidence:.2f}")
+    print(f"  Type: {result.query_type.value}")
+    print(f"  Indexes: {[i.split('.')[-1] for i in result.indexes_to_search]}")
+    print(f"  Confidence: {result.confidence:.2f}")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## 2. Multi-Index Retriever
-# MAGIC 
-# MAGIC Retrieves from one or more indexes based on classification.
 
 # COMMAND ----------
 
@@ -264,7 +270,7 @@ class MultiIndexRetriever:
     """
     
     def __init__(self, endpoint_name: str = ENDPOINT_NAME):
-        self.vs_client = VectorSearchClient()
+        self.vs_client = VectorSearchClient(disable_notice=True)
         self.endpoint_name = endpoint_name
     
     def retrieve(
@@ -275,14 +281,15 @@ class MultiIndexRetriever:
     ) -> List[Dict]:
         """
         Search multiple indexes and combine results.
-        
-        Returns list of dicts with: text_id, text_content, score, source_index
         """
         all_results = []
         
         for index_name in index_names:
             try:
-                index = self.vs_client.get_index(index_name)
+                index = self.vs_client.get_index(
+                    endpoint_name=self.endpoint_name,
+                    index_name=index_name
+                )
                 results = index.similarity_search(
                     query_text=query,
                     columns=["text_id", "text_content"],
@@ -340,141 +347,106 @@ class MultiIndexRetriever:
 
 # Test retriever
 retriever = MultiIndexRetriever()
+print("MultiIndexRetriever initialized successfully")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## 3. STIHL Inventory Agent
-# MAGIC 
-# MAGIC Complete agent with classification, retrieval, and generation.
 
 # COMMAND ----------
 
 class STIHLInventoryAgent:
     """
     Complete RAG agent for STIHL inventory analytics.
-    
-    Flow:
-    1. Classify query → Determine index(es)
-    2. Retrieve → Search relevant index(es)
-    3. Generate → LLM creates response with context
     """
     
     SYSTEM_PROMPT = """You are an expert STIHL inventory and sales analyst. You help managers, 
-executives, and supply chain professionals understand product performance, inventory status, 
-and sales trends.
+executives, and supply chain teams understand their product portfolio, inventory status, 
+and sales performance.
 
-Your responses should be:
-- Data-driven: Reference specific numbers, percentages, and metrics from the context
-- Actionable: Provide clear recommendations when appropriate
-- Concise: Get to the point, but be thorough when needed
-- Professional: Use business language appropriate for stakeholders
+You have access to real-time data about:
+- Product specifications and features
+- Current inventory levels and pricing
+- Historical sales performance
+- Category and company-wide trends
 
-When answering:
-- If asked about specific products, include model numbers and key specs
-- If asked about inventory, mention stock status and any alerts
-- If asked about sales, include revenue figures and growth trends
-- If asked for recommendations, justify with data from the context
+Guidelines:
+1. Base your answers ONLY on the provided context
+2. If the context doesn't contain enough information, say so
+3. Be specific with numbers and product names when available
+4. For strategic questions, provide actionable insights
+5. Format responses clearly with bullet points for lists
 
-If the context doesn't contain enough information to fully answer the question,
-acknowledge what you can answer and what additional data might be needed."""
-
-    QUERY_PROMPT = """Based on the following context from our inventory and sales systems, 
-please answer the user's question.
-
-CONTEXT:
+Context from STIHL database:
 {context}
-
-USER QUESTION: {question}
-
-Provide a clear, data-driven response:"""
-
-    def __init__(
-        self, 
-        llm_endpoint: str = LLM_ENDPOINT,
-        temperature: float = 0.1,
-        use_llm_classifier: bool = False
-    ):
+"""
+    
+    def __init__(self, use_llm_classifier: bool = False):
         self.classifier = QueryClassifier(use_llm_fallback=use_llm_classifier)
         self.retriever = MultiIndexRetriever()
-        self.llm = ChatDatabricks(
-            endpoint=llm_endpoint,
-            temperature=temperature
-        )
+        self.llm = ChatDatabricks(endpoint=LLM_ENDPOINT, temperature=0.1)
         
-        # Build the prompt template
+        # Build the chain
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", self.SYSTEM_PROMPT),
-            ("human", self.QUERY_PROMPT)
+            ("human", "{question}")
         ])
+        
+        self.chain = (
+            {"context": RunnableLambda(self._get_context), "question": RunnablePassthrough()}
+            | self.prompt
+            | self.llm
+            | StrOutputParser()
+        )
     
-    def query(
-        self, 
-        question: str, 
-        num_results: int = 5,
-        return_sources: bool = False
-    ) -> Dict:
-        """
-        Process a user query end-to-end.
-        
-        Args:
-            question: User's natural language question
-            num_results: Number of results per index to retrieve
-            return_sources: Include source documents in response
-            
-        Returns:
-            Dict with answer, classification info, and optionally sources
-        """
-        # Step 1: Classify the query
+    def _get_context(self, question: str) -> str:
+        """Classify query and retrieve relevant context"""
         classification = self.classifier.classify(question)
+        self.last_classification = classification  # Store for debugging
         
-        # Step 2: Retrieve relevant context
         results = self.retriever.retrieve(
             query=question,
             index_names=classification.indexes_to_search,
-            num_results_per_index=num_results
+            num_results_per_index=5
         )
-        context = self.retriever.format_context(results)
         
-        # Step 3: Generate response
-        chain = self.prompt | self.llm | StrOutputParser()
-        answer = chain.invoke({
-            "context": context,
-            "question": question
-        })
-        
-        # Build response
-        response = {
-            "question": question,
-            "answer": answer,
-            "classification": {
-                "type": classification.query_type.value,
-                "indexes_searched": [i.split(".")[-1] for i in classification.indexes_to_search],
-                "confidence": classification.confidence,
-                "reasoning": classification.reasoning
-            }
-        }
-        
-        if return_sources:
-            response["sources"] = [
-                {
-                    "text_id": r["text_id"],
-                    "source_index": r["source_index"],
-                    "score": r["score"],
-                    "preview": r["text_content"][:200] + "..."
-                }
-                for r in results[:5]
-            ]
-        
-        return response
+        return self.retriever.format_context(results)
     
-    def chat(self, question: str) -> str:
-        """Simple interface that returns just the answer string"""
-        result = self.query(question)
-        return result["answer"]
+    def query(self, question: str) -> str:
+        """Process a question and return the response"""
+        try:
+            response = self.chain.invoke(question)
+            return response
+        except Exception as e:
+            return f"Error processing query: {str(e)}"
+    
+    def query_with_debug(self, question: str) -> Dict:
+        """Process a question and return response with debug info"""
+        try:
+            response = self.chain.invoke(question)
+            return {
+                "question": question,
+                "response": response,
+                "classification": {
+                    "type": self.last_classification.query_type.value,
+                    "indexes": self.last_classification.indexes_to_search,
+                    "confidence": self.last_classification.confidence,
+                    "reasoning": self.last_classification.reasoning
+                }
+            }
+        except Exception as e:
+            return {
+                "question": question,
+                "response": f"Error: {str(e)}",
+                "classification": None
+            }
+
+# COMMAND ----------
 
 # Initialize the agent
 agent = STIHLInventoryAgent(use_llm_classifier=False)
+print("STIHL Inventory Agent initialized successfully!")
 
 # COMMAND ----------
 
@@ -483,55 +455,57 @@ agent = STIHLInventoryAgent(use_llm_classifier=False)
 
 # COMMAND ----------
 
-# Test queries representing different personas
-TEST_QUERIES = [
-    # Supply Chain Manager
-    ("Supply Chain", "Which products are low on stock and need restocking?"),
-    ("Supply Chain", "What's our inventory turnover for chainsaws?"),
-    
-    # Sales Director  
-    ("Sales", "What are the best-selling battery products in Q4?"),
-    ("Sales", "Compare trimmer sales across regions"),
-    
-    # Product Manager
-    ("Product", "Which chainsaw models have the highest margins?"),
-    ("Product", "Tell me about the MS 271 Farm Boss specifications"),
-    
-    # Executive
-    ("Executive", "Give me a summary of company performance"),
-    ("Executive", "What products should we discontinue based on the last 24 months?"),
-    ("Executive", "What products bring us the most revenue and what should we bet on?"),
+# Test queries across different personas
+test_scenarios = [
+    {
+        "persona": "Supply Chain",
+        "questions": [
+            "Which products are low on stock and need restocking?",
+            "What's our inventory turnover for chainsaws?"
+        ]
+    },
+    {
+        "persona": "Sales",
+        "questions": [
+            "What are the best-selling battery products in Q4?",
+            "Compare trimmer sales across regions"
+        ]
+    },
+    {
+        "persona": "Product",
+        "questions": [
+            "Which chainsaw models have the highest margins?",
+            "Tell me about the MS 271 Farm Boss specifications"
+        ]
+    },
+    {
+        "persona": "Executive",
+        "questions": [
+            "Give me a summary of company performance",
+            "What products should we discontinue based on the last 24 months?",
+            "What products bring us the most revenue and what should we bet on?"
+        ]
+    }
 ]
 
 print("=" * 80)
 print("STIHL INVENTORY AGENT - TEST RESULTS")
 print("=" * 80)
 
-for persona, question in TEST_QUERIES:
-    print(f"\n{'='*80}")
-    print(f"PERSONA: {persona}")
-    print(f"QUESTION: {question}")
-    print("-" * 80)
-    
-    try:
-        result = agent.query(question, return_sources=True)
+for scenario in test_scenarios:
+    for question in scenario["questions"]:
+        print(f"\n{'='*80}")
+        print(f"PERSONA: {scenario['persona']}")
+        print(f"QUESTION: {question}")
+        print("-" * 80)
         
-        print(f"\nCLASSIFICATION:")
-        print(f"  Type: {result['classification']['type']}")
-        print(f"  Indexes: {result['classification']['indexes_searched']}")
-        print(f"  Confidence: {result['classification']['confidence']:.2f}")
-        
-        print(f"\nANSWER:")
-        print(result['answer'][:800])
-        if len(result['answer']) > 800:
-            print("... [truncated]")
-        
-        print(f"\nSOURCES USED: {len(result.get('sources', []))}")
-        for src in result.get('sources', [])[:2]:
-            print(f"  - {src['source_index']}: {src['text_id']} (score: {src['score']:.3f})")
-    
-    except Exception as e:
-        print(f"ERROR: {e}")
+        try:
+            result = agent.query_with_debug(question)
+            print(f"\nCLASSIFICATION: {result['classification']['type']}")
+            print(f"INDEXES: {[i.split('.')[-1] for i in result['classification']['indexes']]}")
+            print(f"\nRESPONSE:\n{result['response'][:1000]}...")
+        except Exception as e:
+            print(f"ERROR: {e}")
 
 # COMMAND ----------
 
@@ -540,28 +514,62 @@ for persona, question in TEST_QUERIES:
 
 # COMMAND ----------
 
-# Create a pyfunc wrapper for MLflow
+# Re-define configuration (needed for MLflow wrapper class)
+CATALOG = "ai_systems"
+SCHEMA_SILVER = "stihl_silver"
+ENDPOINT_NAME = "stihl_inventory_endpoint"
+LLM_ENDPOINT = "databricks-meta-llama-3-3-70b-instruct"
+
+INDEXES = {
+    "product_details": f"{CATALOG}.{SCHEMA_SILVER}.product_details_index",
+    "inventory_status": f"{CATALOG}.{SCHEMA_SILVER}.inventory_status_index",
+    "sales_summary": f"{CATALOG}.{SCHEMA_SILVER}.sales_summary_index",
+    "executive_insights": f"{CATALOG}.{SCHEMA_SILVER}.executive_insights_index"
+}
+
 class STIHLAgentWrapper(mlflow.pyfunc.PythonModel):
     """MLflow wrapper for the STIHL Inventory Agent"""
     
     def load_context(self, context):
         """Load the agent when model is loaded"""
-        self.agent = STIHLInventoryAgent(use_llm_classifier=False)
+        # Re-import and recreate agent at load time
+        from databricks.vector_search.client import VectorSearchClient
+        from langchain_community.chat_models import ChatDatabricks
+        from langchain_core.prompts import ChatPromptTemplate
+        from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+        from langchain_core.output_parsers import StrOutputParser
+        
+        # Store config for the agent
+        self.config = {
+            "catalog": "ai_systems",
+            "schema": "stihl_silver",
+            "endpoint": "stihl_inventory_endpoint",
+            "llm_endpoint": "databricks-meta-llama-3-3-70b-instruct"
+        }
+        
+        # Agent will be initialized on first predict call
+        self._agent = None
+    
+    def _get_agent(self):
+        """Lazy initialization of the agent"""
+        if self._agent is None:
+            self._agent = STIHLInventoryAgent(use_llm_classifier=False)
+        return self._agent
     
     def predict(self, context, model_input):
         """Process queries"""
         if isinstance(model_input, dict):
             questions = [model_input.get("question", model_input.get("query", ""))]
         elif hasattr(model_input, 'to_dict'):
-            # DataFrame input
             questions = model_input.get("question", model_input.get("query", [])).tolist()
         else:
             questions = [str(model_input)]
         
+        agent = self._get_agent()
         results = []
         for q in questions:
             if q:
-                result = self.agent.query(q)
+                result = agent.query(q)
                 results.append(result)
         
         return results
@@ -574,58 +582,32 @@ with mlflow.start_run(run_name="stihl_inventory_agent") as run:
         "llm_endpoint": LLM_ENDPOINT,
         "num_indexes": len(INDEXES),
         "indexes": list(INDEXES.keys()),
-        "classification_method": "keyword_based"
+        "classification_method": "keyword_based",
+        "catalog": CATALOG,
+        "schema": SCHEMA_SILVER
     })
     
-    # Create signature
+    # Create input example and signature
     input_example = {"question": "What products are low on stock?"}
+    
+    from mlflow.models.signature import ModelSignature
+    from mlflow.types.schema import Schema, ColSpec
+    
+    input_schema = Schema([ColSpec("string", "question")])
+    output_schema = Schema([ColSpec("string")])
+    signature = ModelSignature(inputs=input_schema, outputs=output_schema)
     
     # Log the model
     mlflow.pyfunc.log_model(
         artifact_path="stihl_agent",
         python_model=STIHLAgentWrapper(),
+        signature=signature,
         input_example=input_example,
-        registered_model_name=f"{CATALOG}.{SCHEMA}.stihl_inventory_agent"
+        registered_model_name=f"{CATALOG}.{SCHEMA_SILVER}.stihl_inventory_agent"
     )
     
-    print(f"Model logged to MLflow run: {run.info.run_id}")
-    print(f"Registered as: {CATALOG}.{SCHEMA}.stihl_inventory_agent")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## 6. Deploy to Model Serving (Optional)
-
-# COMMAND ----------
-
-# Uncomment to deploy to Model Serving endpoint
-"""
-from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.serving import ServedEntityInput, EndpointCoreConfigInput
-
-ws = WorkspaceClient()
-
-# Create serving endpoint
-endpoint_name = "stihl-inventory-agent"
-
-try:
-    ws.serving_endpoints.create(
-        name=endpoint_name,
-        config=EndpointCoreConfigInput(
-            served_entities=[
-                ServedEntityInput(
-                    entity_name=f"{CATALOG}.{SCHEMA}.stihl_inventory_agent",
-                    entity_version="1",
-                    scale_to_zero_enabled=True,
-                    workload_size="Small"
-                )
-            ]
-        )
-    )
-    print(f"Created serving endpoint: {endpoint_name}")
-except Exception as e:
-    print(f"Endpoint may already exist or error: {e}")
-"""
+    print(f"✓ Model logged to MLflow run: {run.info.run_id}")
+    print(f"✓ Registered as: {CATALOG}.{SCHEMA_SILVER}.stihl_inventory_agent")
 
 # COMMAND ----------
 
@@ -638,41 +620,48 @@ print("=" * 60)
 print("STIHL INVENTORY AGENT - SETUP COMPLETE")
 print("=" * 60)
 
-print("""
-AGENT CAPABILITIES:
-==================
+print(f"""
+Configuration:
+  Catalog: {CATALOG}
+  Schema: {SCHEMA_SILVER}
+  Vector Search Endpoint: {ENDPOINT_NAME}
+  LLM Endpoint: {LLM_ENDPOINT}
 
-1. AUTOMATIC QUERY CLASSIFICATION
-   - Analyzes incoming queries using keyword patterns
-   - Routes to appropriate index(es)
-   - Supports multi-index queries for complex questions
+Indexes:
+  • product_details_index - Product specs and features
+  • inventory_status_index - Stock levels and pricing
+  • sales_summary_index - Sales performance data
+  • executive_insights_index - Category summaries and trends
 
-2. QUERY TYPES SUPPORTED:
-   - Product Details: Specs, features, descriptions
-   - Inventory Status: Stock levels, pricing, availability
-   - Sales Performance: Revenue, trends, comparisons
-   - Executive Insights: Summaries, recommendations, strategy
+Agent Capabilities:
+  • Automatic query classification (4 categories)
+  • Multi-index retrieval
+  • Context-aware response generation
+  • MLflow model registration
 
-3. INDEXES USED:
-   - product_details_index: Static product info (weekly sync)
-   - inventory_status_index: Pricing + inventory (daily sync)
-   - sales_summary_index: Monthly sales data (daily sync)
-   - executive_insights_index: Summaries + recommendations (daily sync)
+Usage Example:
+  agent = STIHLInventoryAgent()
+  response = agent.query("What chainsaws are best sellers?")
+  print(response)
 
-4. USAGE:
-   
-   # Simple query
-   answer = agent.chat("What products are low on stock?")
-   
-   # Full response with metadata
-   result = agent.query("What products should we discontinue?", return_sources=True)
-   print(result['answer'])
-   print(result['classification'])
-   print(result['sources'])
-
-5. PERSONAS SERVED:
-   - Supply Chain Manager: Inventory, restocking, turnover
-   - Sales Director: Performance, trends, comparisons
-   - Product Manager: Specs, margins, product health
-   - Executive: Summaries, recommendations, strategy
+Model Registered:
+  {CATALOG}.{SCHEMA_SILVER}.stihl_inventory_agent
 """)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Quick Test Cell
+# MAGIC Run this cell anytime to test the agent
+
+# COMMAND ----------
+
+# Quick test - run this cell to test the agent
+print("Testing STIHL Inventory Agent...")
+print("=" * 50)
+
+test_question = "What are the top selling products and which ones should we invest in?"
+print(f"Question: {test_question}\n")
+
+response = agent.query(test_question)
+print(f"Response:\n{response}")
