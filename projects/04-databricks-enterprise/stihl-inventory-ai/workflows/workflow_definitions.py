@@ -2,6 +2,9 @@
 # ================================
 # These YAML files define the orchestration workflows for the STIHL Inventory AI system.
 # Import these into Databricks Workflows UI or use the Databricks CLI.
+#
+# Catalog: ai_systems
+# Schemas: stihl_bronze, stihl_silver, stihl_gold
 
 # =============================================================================
 # WORKFLOW 1: DAILY DATA PIPELINE
@@ -22,6 +25,7 @@ tags:
   team: data-engineering
   project: stihl-inventory-ai
   environment: production
+  catalog: ai_systems
 
 tasks:
   # Step 1: Ingest raw data from source systems
@@ -29,17 +33,23 @@ tasks:
     description: Load raw data from ERP, WMS, POS systems
     notebook_task:
       notebook_path: /Workspace/stihl_inventory_ai/notebooks/02_generate_sample_data
-      # In production, replace with actual ingestion notebook
+      base_parameters:
+        catalog: ai_systems
+        schema_bronze: stihl_bronze
+        schema_silver: stihl_silver
     cluster_id: ${var.cluster_id}
     timeout_seconds: 1800
     
   # Step 2: Clean and transform to Silver
   - task_key: transform_silver
-    description: Clean, dedupe, validate data
+    description: Clean, dedupe, validate data and generate text representations
     depends_on:
       - task_key: ingest_bronze
     notebook_task:
       notebook_path: /Workspace/stihl_inventory_ai/notebooks/03_text_generation
+      base_parameters:
+        catalog: ai_systems
+        schema_silver: stihl_silver
     cluster_id: ${var.cluster_id}
     timeout_seconds: 3600
     
@@ -50,6 +60,10 @@ tasks:
       - task_key: transform_silver
     notebook_task:
       notebook_path: /Workspace/stihl_inventory_ai/notebooks/04_gold_aggregations
+      base_parameters:
+        catalog: ai_systems
+        schema_silver: stihl_silver
+        schema_gold: stihl_gold
     cluster_id: ${var.cluster_id}
     timeout_seconds: 1800
     
@@ -63,6 +77,8 @@ tasks:
       base_parameters:
         action: sync_index
         index: inventory_status
+        catalog: ai_systems
+        schema: stihl_silver
     cluster_id: ${var.cluster_id}
     timeout_seconds: 900
     
@@ -75,6 +91,8 @@ tasks:
       base_parameters:
         action: sync_index
         index: sales_summary
+        catalog: ai_systems
+        schema: stihl_silver
     cluster_id: ${var.cluster_id}
     timeout_seconds: 900
     
@@ -87,6 +105,8 @@ tasks:
       base_parameters:
         action: sync_index
         index: executive_insights
+        catalog: ai_systems
+        schema: stihl_silver
     cluster_id: ${var.cluster_id}
     timeout_seconds: 900
     
@@ -101,6 +121,7 @@ tasks:
       notebook_path: /Workspace/stihl_inventory_ai/notebooks/07_agent_evaluation
       base_parameters:
         quick_check: "true"
+        catalog: ai_systems
     cluster_id: ${var.cluster_id}
     timeout_seconds: 600
 
@@ -132,6 +153,7 @@ tags:
   team: data-engineering
   project: stihl-inventory-ai
   environment: production
+  catalog: ai_systems
 
 tasks:
   # Step 1: Refresh product text representations
@@ -141,6 +163,8 @@ tasks:
       notebook_path: /Workspace/stihl_inventory_ai/notebooks/03_text_generation
       base_parameters:
         tables: "product_details_text"
+        catalog: ai_systems
+        schema_silver: stihl_silver
     cluster_id: ${var.cluster_id}
     timeout_seconds: 1800
     
@@ -154,6 +178,8 @@ tasks:
       base_parameters:
         action: sync_index
         index: product_details
+        catalog: ai_systems
+        schema: stihl_silver
     cluster_id: ${var.cluster_id}
     timeout_seconds: 900
     
@@ -167,6 +193,7 @@ tasks:
       base_parameters:
         quick_check: "true"
         index: "product_details"
+        catalog: ai_systems
     cluster_id: ${var.cluster_id}
     timeout_seconds: 300
 
@@ -195,6 +222,7 @@ tags:
   team: data-engineering
   project: stihl-inventory-ai
   environment: production
+  catalog: ai_systems
 
 tasks:
   # Full evaluation suite
@@ -204,6 +232,9 @@ tasks:
       notebook_path: /Workspace/stihl_inventory_ai/notebooks/07_agent_evaluation
       base_parameters:
         full_suite: "true"
+        catalog: ai_systems
+        schema_silver: stihl_silver
+        schema_gold: stihl_gold
     cluster_id: ${var.cluster_id}
     timeout_seconds: 3600
     
@@ -214,6 +245,8 @@ tasks:
       - task_key: full_evaluation
     notebook_task:
       notebook_path: /Workspace/stihl_inventory_ai/notebooks/08_monthly_report
+      base_parameters:
+        catalog: ai_systems
     cluster_id: ${var.cluster_id}
     timeout_seconds: 600
 
@@ -227,6 +260,54 @@ max_concurrent_runs: 1
 """
 
 # =============================================================================
+# CONFIGURATION SUMMARY
+# =============================================================================
+"""
+CATALOG AND SCHEMA CONFIGURATION
+================================
+
+Catalog: ai_systems (existing Unity Catalog)
+
+Schemas:
+  - ai_systems.stihl_bronze  : Raw data ingestion layer
+  - ai_systems.stihl_silver  : Cleaned data + text representations
+  - ai_systems.stihl_gold    : Aggregated business metrics
+
+Tables by Schema:
+  
+  stihl_bronze:
+    - raw_products
+    - raw_inventory
+    - raw_sales
+  
+  stihl_silver:
+    - dim_products
+    - fact_inventory_current
+    - fact_sales
+    - product_details_text
+    - inventory_status_text
+    - sales_summary_text
+    - category_summary_text
+    - trend_summary_text
+    - product_performance_text
+    - executive_insights_text
+  
+  stihl_gold:
+    - category_summary
+    - product_performance
+    - monthly_trends
+    - agent_evaluation_history
+
+Vector Search:
+  - Endpoint: stihl_inventory_endpoint
+  - Indexes:
+    - ai_systems.stihl_silver.product_details_index
+    - ai_systems.stihl_silver.inventory_status_index
+    - ai_systems.stihl_silver.sales_summary_index
+    - ai_systems.stihl_silver.executive_insights_index
+"""
+
+# =============================================================================
 # SYNC SCHEDULE SUMMARY
 # =============================================================================
 """
@@ -235,21 +316,21 @@ INDEX SYNC STRATEGY
 
 Based on data volatility analysis:
 
-┌─────────────────────────┬───────────────┬─────────────────────────────────┐
-│ INDEX                   │ SYNC SCHEDULE │ RATIONALE                       │
-├─────────────────────────┼───────────────┼─────────────────────────────────┤
-│ product_details_index   │ WEEKLY        │ Specs/features rarely change    │
-│                         │ (Sunday 2 AM) │ Only new products need sync     │
-├─────────────────────────┼───────────────┼─────────────────────────────────┤
-│ inventory_status_index  │ DAILY         │ Prices change frequently        │
-│                         │ (Daily 3 AM)  │ Stock levels change daily       │
-├─────────────────────────┼───────────────┼─────────────────────────────────┤
-│ sales_summary_index     │ DAILY         │ New sales data every day        │
-│                         │ (Daily 4 AM)  │ Monthly aggregates update       │
-├─────────────────────────┼───────────────┼─────────────────────────────────┤
-│ executive_insights_index│ DAILY         │ Summaries reflect latest data   │
-│                         │ (Daily 5 AM)  │ Recommendations may change      │
-└─────────────────────────┴───────────────┴─────────────────────────────────┘
++-------------------------+---------------+---------------------------------+
+| INDEX                   | SYNC SCHEDULE | RATIONALE                       |
++-------------------------+---------------+---------------------------------+
+| product_details_index   | WEEKLY        | Specs/features rarely change    |
+|                         | (Sunday 2 AM) | Only new products need sync     |
++-------------------------+---------------+---------------------------------+
+| inventory_status_index  | DAILY         | Prices change frequently        |
+|                         | (Daily 3 AM)  | Stock levels change daily       |
++-------------------------+---------------+---------------------------------+
+| sales_summary_index     | DAILY         | New sales data every day        |
+|                         | (Daily 4 AM)  | Monthly aggregates update       |
++-------------------------+---------------+---------------------------------+
+| executive_insights_index| DAILY         | Summaries reflect latest data   |
+|                         | (Daily 5 AM)  | Recommendations may change      |
++-------------------------+---------------+---------------------------------+
 
 COST OPTIMIZATION:
 - Product index syncs 4x/month instead of 30x/month (87% reduction)

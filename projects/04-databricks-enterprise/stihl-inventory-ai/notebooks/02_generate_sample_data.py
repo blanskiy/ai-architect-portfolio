@@ -9,12 +9,19 @@
 # MAGIC - 24 months of historical sales data
 # MAGIC - Daily inventory snapshots (current month)
 # MAGIC - Realistic pricing, margins, and sales patterns
+# MAGIC
+# MAGIC **Catalog:** ai_systems (existing)
+# MAGIC **Schemas:** stihl_bronze, stihl_silver, stihl_gold
 
 # COMMAND ----------
 
 # MAGIC %pip install faker
 
 # COMMAND ----------
+
+# IMPORTANT: Save Python's built-in round before PySpark overwrites it
+import builtins
+python_round = builtins.round
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
@@ -27,15 +34,18 @@ import uuid
 # Initialize Spark
 spark = SparkSession.builder.getOrCreate()
 
-# Configuration
-CATALOG = "stihl"
-SCHEMA_SILVER = "silver"
-SCHEMA_GOLD = "gold"
+# Configuration - Using existing ai_systems catalog
+CATALOG = "ai_systems"
+SCHEMA_BRONZE = "stihl_bronze"
+SCHEMA_SILVER = "stihl_silver"
+SCHEMA_GOLD = "stihl_gold"
 
 # Date range for historical data
 END_DATE = datetime.now().date()
 START_DATE = END_DATE - timedelta(days=730)  # 24 months
 
+print(f"Catalog: {CATALOG}")
+print(f"Schemas: {SCHEMA_BRONZE}, {SCHEMA_SILVER}, {SCHEMA_GOLD}")
 print(f"Generating data from {START_DATE} to {END_DATE}")
 
 # COMMAND ----------
@@ -137,9 +147,9 @@ PRODUCTS = [
     {"model": "SR 450", "name": "SR 450", "cat": "Sprayers", "sub": "Gas Sprayers", "power": "Gas", "segment": "Professional", "cc": 63.3, "bar": None, "weight": 26.5, "msrp": 899.99, "cost": 445.00, "desc": "Commercial backpack sprayer for pest control professionals.", "features": "63.3cc engine,3.4 gallon,High velocity"},
 ]
 
-# Calculate margin percentage
+# Calculate margin percentage using Python's built-in round (not PySpark's)
 for p in PRODUCTS:
-    p["margin_pct"] = round((p["msrp"] - p["cost"]) / p["msrp"] * 100, 1)
+    p["margin_pct"] = python_round((p["msrp"] - p["cost"]) / p["msrp"] * 100, 1)
 
 print(f"Total products: {len(PRODUCTS)}")
 print(f"Categories: {set(p['cat'] for p in PRODUCTS)}")
@@ -151,12 +161,37 @@ print(f"Categories: {set(p['cat'] for p in PRODUCTS)}")
 
 # COMMAND ----------
 
-# Create product DataFrame
-from pyspark.sql import Row
 from datetime import date
 import random
 
-def generate_product_rows():
+# Define explicit schema to handle None values properly
+products_schema = StructType([
+    StructField("product_id", StringType(), False),
+    StructField("model_number", StringType(), False),
+    StructField("product_name", StringType(), True),
+    StructField("category", StringType(), False),
+    StructField("subcategory", StringType(), True),
+    StructField("power_type", StringType(), True),
+    StructField("user_segment", StringType(), True),
+    StructField("engine_displacement_cc", DoubleType(), True),
+    StructField("bar_length_inches", DoubleType(), True),
+    StructField("cutting_width_inches", DoubleType(), True),
+    StructField("weight_lbs", DoubleType(), True),
+    StructField("msrp", DoubleType(), True),
+    StructField("cost", DoubleType(), True),
+    StructField("margin_pct", DoubleType(), True),
+    StructField("price_effective_date", DateType(), True),
+    StructField("description", StringType(), True),
+    StructField("features", StringType(), True),
+    StructField("is_active", BooleanType(), True),
+    StructField("launch_date", DateType(), True),
+    StructField("discontinue_date", DateType(), True),
+    StructField("created_at", TimestampType(), True),
+    StructField("updated_at", TimestampType(), True),
+])
+
+def generate_product_data():
+    """Generate product data as list of tuples for explicit schema"""
     rows = []
     for i, p in enumerate(PRODUCTS):
         # Generate launch date (older products launched earlier)
@@ -174,36 +209,38 @@ def generate_product_rows():
             is_active = False
             discontinue_date = date(2024, random.randint(1, 6), 15)
         
-        rows.append(Row(
-            product_id=f"P{str(i+1).zfill(4)}",
-            model_number=p["model"],
-            product_name=p["name"],
-            category=p["cat"],
-            subcategory=p["sub"],
-            power_type=p["power"],
-            user_segment=p["segment"],
-            engine_displacement_cc=float(p["cc"]) if p["cc"] else None,
-            bar_length_inches=float(p["bar"]) if p["bar"] else None,
-            cutting_width_inches=None,
-            weight_lbs=float(p["weight"]),
-            msrp=float(p["msrp"]),
-            cost=float(p["cost"]),
-            margin_pct=float(p["margin_pct"]),
-            price_effective_date=date(2024, 1, 1),
-            description=p["desc"],
-            features=p["features"],
-            is_active=is_active,
-            launch_date=launch_date,
-            discontinue_date=discontinue_date,
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+        rows.append((
+            f"P{str(i+1).zfill(4)}",  # product_id
+            p["model"],               # model_number
+            p["name"],                # product_name
+            p["cat"],                 # category
+            p["sub"],                 # subcategory
+            p["power"],               # power_type
+            p["segment"],             # user_segment
+            float(p["cc"]) if p["cc"] else None,  # engine_displacement_cc
+            float(p["bar"]) if p["bar"] else None,  # bar_length_inches
+            None,                     # cutting_width_inches
+            float(p["weight"]),       # weight_lbs
+            float(p["msrp"]),         # msrp
+            float(p["cost"]),         # cost
+            float(p["margin_pct"]),   # margin_pct
+            date(2024, 1, 1),         # price_effective_date
+            p["desc"],                # description
+            p["features"],            # features
+            is_active,                # is_active
+            launch_date,              # launch_date
+            discontinue_date,         # discontinue_date
+            datetime.now(),           # created_at
+            datetime.now()            # updated_at
         ))
     return rows
 
-products_df = spark.createDataFrame(generate_product_rows())
+# Create DataFrame with explicit schema
+product_data = generate_product_data()
+products_df = spark.createDataFrame(product_data, schema=products_schema)
 
-# Write to silver
-products_df.write.mode("overwrite").saveAsTable(f"{CATALOG}.{SCHEMA_SILVER}.dim_products")
+# Write to silver (overwriteSchema handles type mismatches with existing table)
+products_df.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(f"{CATALOG}.{SCHEMA_SILVER}.dim_products")
 
 # Display sample
 display(spark.table(f"{CATALOG}.{SCHEMA_SILVER}.dim_products"))
@@ -217,6 +254,21 @@ display(spark.table(f"{CATALOG}.{SCHEMA_SILVER}.dim_products"))
 
 import uuid
 from datetime import date, timedelta
+
+# Define schema for sales data
+sales_schema = StructType([
+    StructField("sale_id", StringType(), False),
+    StructField("sale_date", DateType(), False),
+    StructField("product_id", StringType(), False),
+    StructField("units_sold", IntegerType(), False),
+    StructField("unit_price", DoubleType(), True),
+    StructField("revenue", DoubleType(), True),
+    StructField("cost_of_goods", DoubleType(), True),
+    StructField("gross_margin", DoubleType(), True),
+    StructField("region", StringType(), True),
+    StructField("channel", StringType(), True),
+    StructField("created_at", TimestampType(), True),
+])
 
 def generate_sales_data():
     """Generate 24 months of realistic sales data"""
@@ -328,18 +380,18 @@ def generate_sales_data():
                 cogs = region_sales * float(product.cost)
                 margin = revenue - cogs
                 
-                sales_rows.append(Row(
-                    sale_id=str(uuid.uuid4()),
-                    sale_date=current_date,
-                    product_id=product.product_id,
-                    units_sold=region_sales,
-                    unit_price=round(unit_price, 2),
-                    revenue=round(revenue, 2),
-                    cost_of_goods=round(cogs, 2),
-                    gross_margin=round(margin, 2),
-                    region=region,
-                    channel=channel,
-                    created_at=datetime.now()
+                sales_rows.append((
+                    str(uuid.uuid4()),      # sale_id
+                    current_date,           # sale_date
+                    product.product_id,     # product_id
+                    region_sales,           # units_sold
+                    python_round(unit_price, 2),    # unit_price
+                    python_round(revenue, 2),       # revenue
+                    python_round(cogs, 2),          # cost_of_goods
+                    python_round(margin, 2),        # gross_margin
+                    region,                 # region
+                    channel,                # channel
+                    datetime.now()          # created_at
                 ))
         
         current_date += timedelta(days=1)
@@ -351,12 +403,12 @@ def generate_sales_data():
     return sales_rows
 
 print("Generating 24 months of sales data...")
-sales_rows = generate_sales_data()
-print(f"Generated {len(sales_rows)} sales records")
+sales_data = generate_sales_data()
+print(f"Generated {len(sales_data)} sales records")
 
-# Create DataFrame and write
-sales_df = spark.createDataFrame(sales_rows)
-sales_df.write.mode("overwrite").saveAsTable(f"{CATALOG}.{SCHEMA_SILVER}.fact_sales")
+# Create DataFrame with explicit schema and write
+sales_df = spark.createDataFrame(sales_data, schema=sales_schema)
+sales_df.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(f"{CATALOG}.{SCHEMA_SILVER}.fact_sales")
 
 display(spark.table(f"{CATALOG}.{SCHEMA_SILVER}.fact_sales").limit(10))
 
@@ -366,6 +418,23 @@ display(spark.table(f"{CATALOG}.{SCHEMA_SILVER}.fact_sales").limit(10))
 # MAGIC ## Generate Current Inventory Snapshot
 
 # COMMAND ----------
+
+# Define schema for inventory data
+inventory_schema = StructType([
+    StructField("snapshot_date", DateType(), False),
+    StructField("product_id", StringType(), False),
+    StructField("total_on_hand", IntegerType(), True),
+    StructField("total_in_transit", IntegerType(), True),
+    StructField("total_reserved", IntegerType(), True),
+    StructField("total_available", IntegerType(), True),
+    StructField("reorder_point", IntegerType(), True),
+    StructField("reorder_quantity", IntegerType(), True),
+    StructField("is_low_stock", BooleanType(), True),
+    StructField("is_out_of_stock", BooleanType(), True),
+    StructField("avg_daily_sales", DoubleType(), True),
+    StructField("days_of_supply", IntegerType(), True),
+    StructField("updated_at", TimestampType(), True),
+])
 
 def generate_inventory_snapshot():
     """Generate current inventory based on recent sales velocity"""
@@ -395,7 +464,7 @@ def generate_inventory_snapshot():
             continue
         
         sales_data = sales_map.get(product.product_id)
-        avg_daily_sales = sales_data.avg_daily_sales if sales_data else 5.0
+        avg_daily_sales = float(sales_data.avg_daily_sales) if sales_data else 5.0
         
         # Calculate inventory levels
         # Higher-selling products should have more inventory
@@ -418,28 +487,28 @@ def generate_inventory_snapshot():
         # Days of supply
         days_of_supply = int(available / avg_daily_sales) if avg_daily_sales > 0 else 999
         
-        inventory_rows.append(Row(
-            snapshot_date=today,
-            product_id=product.product_id,
-            total_on_hand=on_hand,
-            total_in_transit=in_transit,
-            total_reserved=reserved,
-            total_available=available,
-            reorder_point=reorder_point,
-            reorder_quantity=int(reorder_point * 2),
-            is_low_stock=is_low_stock,
-            is_out_of_stock=is_out_of_stock,
-            avg_daily_sales=round(avg_daily_sales, 2),
-            days_of_supply=days_of_supply,
-            updated_at=datetime.now()
+        inventory_rows.append((
+            today,                      # snapshot_date
+            product.product_id,         # product_id
+            on_hand,                    # total_on_hand
+            in_transit,                 # total_in_transit
+            reserved,                   # total_reserved
+            available,                  # total_available
+            reorder_point,              # reorder_point
+            int(reorder_point * 2),     # reorder_quantity
+            is_low_stock,               # is_low_stock
+            is_out_of_stock,            # is_out_of_stock
+            python_round(avg_daily_sales, 2),  # avg_daily_sales
+            days_of_supply,             # days_of_supply
+            datetime.now()              # updated_at
         ))
     
     return inventory_rows
 
 print("Generating current inventory snapshot...")
-inventory_rows = generate_inventory_snapshot()
-inventory_df = spark.createDataFrame(inventory_rows)
-inventory_df.write.mode("overwrite").saveAsTable(f"{CATALOG}.{SCHEMA_SILVER}.fact_inventory_current")
+inventory_data = generate_inventory_snapshot()
+inventory_df = spark.createDataFrame(inventory_data, schema=inventory_schema)
+inventory_df.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(f"{CATALOG}.{SCHEMA_SILVER}.fact_inventory_current")
 
 display(spark.table(f"{CATALOG}.{SCHEMA_SILVER}.fact_inventory_current"))
 
@@ -497,4 +566,8 @@ display(spark.sql(f"""
     FROM {CATALOG}.{SCHEMA_SILVER}.fact_inventory_current
 """))
 
+print("\n" + "=" * 60)
+print(f"Catalog: {CATALOG}")
+print(f"Tables created in: {SCHEMA_SILVER}")
+print("=" * 60)
 print("\n✅ Sample data generation complete!")

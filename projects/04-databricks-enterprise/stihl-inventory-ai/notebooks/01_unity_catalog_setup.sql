@@ -1,31 +1,30 @@
 -- =============================================================================
 -- STIHL INVENTORY AI - UNITY CATALOG SETUP
 -- =============================================================================
--- This notebook creates all tables for the STIHL inventory analytics system
--- with Mosaic AI integration for natural language queries.
---
--- Architecture: Medallion (Bronze → Silver → Gold) + Vector Search
+-- Using existing ai_systems catalog with STIHL-specific schemas
+-- 
+-- Architecture: Medallion (Bronze -> Silver -> Gold) + Vector Search
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
 -- CATALOG AND SCHEMA SETUP
 -- -----------------------------------------------------------------------------
 
--- Create catalog (run once by admin)
-CREATE CATALOG IF NOT EXISTS stihl;
+-- Use existing catalog (no need to create new one)
+USE CATALOG ai_systems;
 
--- Create schemas for each layer
-CREATE SCHEMA IF NOT EXISTS stihl.bronze
+-- Create schemas for STIHL project within ai_systems
+CREATE SCHEMA IF NOT EXISTS stihl_bronze
 COMMENT 'Raw data ingestion layer - data as received from source systems';
 
-CREATE SCHEMA IF NOT EXISTS stihl.silver
+CREATE SCHEMA IF NOT EXISTS stihl_silver
 COMMENT 'Cleaned and transformed data - includes text representations for AI';
 
-CREATE SCHEMA IF NOT EXISTS stihl.gold
+CREATE SCHEMA IF NOT EXISTS stihl_gold
 COMMENT 'Aggregated business metrics - reports and dashboards';
 
--- Use silver schema as default for most operations
-USE CATALOG stihl;
+-- Verify schemas created
+SHOW SCHEMAS IN ai_systems LIKE 'stihl*';
 
 -- -----------------------------------------------------------------------------
 -- BRONZE LAYER: Raw Data Ingestion
@@ -35,7 +34,7 @@ USE CATALOG stihl;
 -- Retention: 90 days (for replay capability)
 
 -- Raw products from ERP system
-CREATE TABLE IF NOT EXISTS bronze.raw_products (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_bronze.raw_products (
     ingestion_id STRING COMMENT 'Unique identifier for this ingestion batch',
     ingestion_date DATE COMMENT 'Date of data load',
     source_system STRING COMMENT 'Source system identifier (ERP)',
@@ -51,7 +50,7 @@ TBLPROPERTIES (
 );
 
 -- Raw inventory snapshots from Warehouse Management System
-CREATE TABLE IF NOT EXISTS bronze.raw_inventory (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_bronze.raw_inventory (
     ingestion_id STRING,
     ingestion_date DATE,
     source_system STRING,
@@ -63,7 +62,7 @@ USING DELTA
 COMMENT 'Raw daily inventory snapshots from WMS';
 
 -- Raw sales transactions from POS/Order systems
-CREATE TABLE IF NOT EXISTS bronze.raw_sales (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_bronze.raw_sales (
     ingestion_id STRING,
     ingestion_date DATE,
     source_system STRING,
@@ -81,7 +80,7 @@ COMMENT 'Raw daily sales transactions from POS systems';
 -- Update frequency: Daily (after bronze load)
 
 -- Products dimension (Slowly Changing Dimension Type 2)
-CREATE TABLE IF NOT EXISTS silver.dim_products (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_silver.dim_products (
     product_id STRING NOT NULL COMMENT 'Unique product identifier',
     model_number STRING NOT NULL COMMENT 'STIHL model number (e.g., MS 271)',
     product_name STRING COMMENT 'Product display name (e.g., Farm Boss)',
@@ -107,12 +106,12 @@ CREATE TABLE IF NOT EXISTS silver.dim_products (
     features STRING COMMENT 'Key features as comma-separated list',
     
     -- Lifecycle
-    is_active BOOLEAN DEFAULT true COMMENT 'Currently sold product',
+    is_active BOOLEAN COMMENT 'Currently sold product',
     launch_date DATE COMMENT 'Product launch date',
     discontinue_date DATE COMMENT 'Discontinuation date if applicable',
     
     -- Metadata
-    created_at TIMESTAMP DEFAULT current_timestamp(),
+    created_at TIMESTAMP,
     updated_at TIMESTAMP,
     
     CONSTRAINT pk_products PRIMARY KEY (product_id)
@@ -125,7 +124,7 @@ TBLPROPERTIES (
 );
 
 -- Current inventory snapshot (daily)
-CREATE TABLE IF NOT EXISTS silver.fact_inventory_current (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_silver.fact_inventory_current (
     snapshot_date DATE NOT NULL COMMENT 'Date of inventory snapshot',
     product_id STRING NOT NULL COMMENT 'FK to dim_products',
     
@@ -146,7 +145,7 @@ CREATE TABLE IF NOT EXISTS silver.fact_inventory_current (
     days_of_supply INT COMMENT 'Estimated days until stockout',
     
     -- Metadata
-    updated_at TIMESTAMP DEFAULT current_timestamp(),
+    updated_at TIMESTAMP,
     
     CONSTRAINT pk_inventory PRIMARY KEY (snapshot_date, product_id)
 )
@@ -159,7 +158,7 @@ TBLPROPERTIES (
 );
 
 -- Sales transactions (append-only fact table)
-CREATE TABLE IF NOT EXISTS silver.fact_sales (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_silver.fact_sales (
     sale_id STRING NOT NULL COMMENT 'Unique sale transaction ID',
     sale_date DATE NOT NULL COMMENT 'Date of sale',
     product_id STRING NOT NULL COMMENT 'FK to dim_products',
@@ -176,7 +175,7 @@ CREATE TABLE IF NOT EXISTS silver.fact_sales (
     channel STRING COMMENT 'Sales channel: Retail, Pro Dealer, Online',
     
     -- Metadata
-    created_at TIMESTAMP DEFAULT current_timestamp(),
+    created_at TIMESTAMP,
     
     CONSTRAINT pk_sales PRIMARY KEY (sale_id)
 )
@@ -195,7 +194,7 @@ TBLPROPERTIES (
 -- These tables feed into Vector Search indexes
 
 -- Product details text (STATIC info - weekly sync)
-CREATE TABLE IF NOT EXISTS silver.product_details_text (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_silver.product_details_text (
     text_id STRING NOT NULL COMMENT 'Unique text record ID',
     product_id STRING NOT NULL COMMENT 'FK to dim_products',
     
@@ -211,7 +210,7 @@ CREATE TABLE IF NOT EXISTS silver.product_details_text (
     
     -- Change tracking
     source_updated_at TIMESTAMP COMMENT 'When source product was last updated',
-    text_generated_at TIMESTAMP DEFAULT current_timestamp() COMMENT 'When text was generated',
+    text_generated_at TIMESTAMP COMMENT 'When text was generated',
     
     CONSTRAINT pk_product_text PRIMARY KEY (text_id)
 )
@@ -224,7 +223,7 @@ TBLPROPERTIES (
 
 -- Inventory status text (DYNAMIC info - daily sync)
 -- Includes current pricing since it changes frequently
-CREATE TABLE IF NOT EXISTS silver.inventory_status_text (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_silver.inventory_status_text (
     text_id STRING NOT NULL COMMENT 'Unique text record ID',
     product_id STRING NOT NULL COMMENT 'FK to dim_products',
     snapshot_date DATE NOT NULL COMMENT 'Date of inventory snapshot',
@@ -244,7 +243,7 @@ CREATE TABLE IF NOT EXISTS silver.inventory_status_text (
     days_of_supply INT COMMENT 'Days of supply',
     
     -- Change tracking
-    text_generated_at TIMESTAMP DEFAULT current_timestamp(),
+    text_generated_at TIMESTAMP,
     
     CONSTRAINT pk_inventory_text PRIMARY KEY (text_id)
 )
@@ -257,7 +256,7 @@ TBLPROPERTIES (
 );
 
 -- Sales summary text (monthly aggregates - daily sync)
-CREATE TABLE IF NOT EXISTS silver.sales_summary_text (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_silver.sales_summary_text (
     text_id STRING NOT NULL COMMENT 'Unique text record ID',
     product_id STRING NOT NULL COMMENT 'FK to dim_products',
     period_type STRING NOT NULL COMMENT 'Period type: monthly, quarterly',
@@ -277,7 +276,7 @@ CREATE TABLE IF NOT EXISTS silver.sales_summary_text (
     yoy_growth_pct DECIMAL(5,2) COMMENT 'Year-over-year growth',
     
     -- Change tracking
-    text_generated_at TIMESTAMP DEFAULT current_timestamp(),
+    text_generated_at TIMESTAMP,
     
     CONSTRAINT pk_sales_text PRIMARY KEY (text_id)
 )
@@ -295,7 +294,7 @@ TBLPROPERTIES (
 -- Also feeds into executive summary text generation
 
 -- Category-level summary (daily)
-CREATE TABLE IF NOT EXISTS gold.category_summary (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_gold.category_summary (
     snapshot_date DATE NOT NULL,
     category STRING NOT NULL,
     subcategory STRING,
@@ -332,7 +331,7 @@ CREATE TABLE IF NOT EXISTS gold.category_summary (
     top_product_revenue DECIMAL(12,2),
     
     -- Metadata
-    updated_at TIMESTAMP DEFAULT current_timestamp(),
+    updated_at TIMESTAMP,
     
     CONSTRAINT pk_category_summary PRIMARY KEY (snapshot_date, category, subcategory)
 )
@@ -340,7 +339,7 @@ USING DELTA
 COMMENT 'Daily category-level performance summary';
 
 -- Product performance analysis (daily)
-CREATE TABLE IF NOT EXISTS gold.product_performance (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_gold.product_performance (
     snapshot_date DATE NOT NULL,
     product_id STRING NOT NULL,
     model_number STRING,
@@ -386,7 +385,7 @@ CREATE TABLE IF NOT EXISTS gold.product_performance (
     recommendation STRING COMMENT 'Invest, Maintain, Harvest, Divest',
     
     -- Metadata
-    updated_at TIMESTAMP DEFAULT current_timestamp(),
+    updated_at TIMESTAMP,
     
     CONSTRAINT pk_product_perf PRIMARY KEY (snapshot_date, product_id)
 )
@@ -394,7 +393,7 @@ USING DELTA
 COMMENT 'Daily product performance analysis with rankings and recommendations';
 
 -- Monthly trends (historical)
-CREATE TABLE IF NOT EXISTS gold.monthly_trends (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_gold.monthly_trends (
     year_month STRING NOT NULL COMMENT 'YYYY-MM format',
     category STRING,  -- NULL for company-wide
     
@@ -422,7 +421,7 @@ CREATE TABLE IF NOT EXISTS gold.monthly_trends (
     top_product_name STRING,
     
     -- Metadata
-    updated_at TIMESTAMP DEFAULT current_timestamp(),
+    updated_at TIMESTAMP,
     
     CONSTRAINT pk_monthly_trends PRIMARY KEY (year_month, category)
 )
@@ -436,7 +435,7 @@ COMMENT 'Monthly aggregated trends for historical analysis';
 -- Generated from Gold layer aggregations
 
 -- Category summary text
-CREATE TABLE IF NOT EXISTS silver.category_summary_text (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_silver.category_summary_text (
     text_id STRING NOT NULL,
     category STRING NOT NULL,
     snapshot_date DATE NOT NULL,
@@ -447,7 +446,7 @@ CREATE TABLE IF NOT EXISTS silver.category_summary_text (
     has_low_stock_alert BOOLEAN,
     has_growth_opportunity BOOLEAN,
     
-    text_generated_at TIMESTAMP DEFAULT current_timestamp(),
+    text_generated_at TIMESTAMP,
     
     CONSTRAINT pk_cat_summary_text PRIMARY KEY (text_id)
 )
@@ -458,7 +457,7 @@ TBLPROPERTIES (
 );
 
 -- Trend summary text (company-wide and by category)
-CREATE TABLE IF NOT EXISTS silver.trend_summary_text (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_silver.trend_summary_text (
     text_id STRING NOT NULL,
     period_type STRING NOT NULL COMMENT 'quarterly, annual, last_24_months',
     period_label STRING NOT NULL COMMENT 'Q4-2024, 2024, Last 24 Months',
@@ -470,7 +469,7 @@ CREATE TABLE IF NOT EXISTS silver.trend_summary_text (
     period_start DATE,
     period_end DATE,
     
-    text_generated_at TIMESTAMP DEFAULT current_timestamp(),
+    text_generated_at TIMESTAMP,
     
     CONSTRAINT pk_trend_text PRIMARY KEY (text_id)
 )
@@ -481,7 +480,7 @@ TBLPROPERTIES (
 );
 
 -- Product performance text (for investment/divestment recommendations)
-CREATE TABLE IF NOT EXISTS silver.product_performance_text (
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_silver.product_performance_text (
     text_id STRING NOT NULL,
     product_id STRING NOT NULL,
     snapshot_date DATE NOT NULL,
@@ -493,7 +492,7 @@ CREATE TABLE IF NOT EXISTS silver.product_performance_text (
     performance_tier STRING,
     recommendation STRING,
     
-    text_generated_at TIMESTAMP DEFAULT current_timestamp(),
+    text_generated_at TIMESTAMP,
     
     CONSTRAINT pk_prod_perf_text PRIMARY KEY (text_id)
 )
@@ -503,12 +502,29 @@ TBLPROPERTIES (
     'delta.enableChangeDataFeed' = 'true'
 );
 
+-- Executive insights combined (for Vector Search)
+CREATE TABLE IF NOT EXISTS ai_systems.stihl_silver.executive_insights_text (
+    text_id STRING NOT NULL,
+    text_content STRING NOT NULL,
+    source_type STRING COMMENT 'category_summary, trend_summary, product_performance',
+    category STRING,
+    product_id STRING,
+    text_generated_at TIMESTAMP,
+    
+    CONSTRAINT pk_exec_insights PRIMARY KEY (text_id)
+)
+USING DELTA
+COMMENT 'Combined executive insights for Vector Search'
+TBLPROPERTIES (
+    'delta.enableChangeDataFeed' = 'true'
+);
+
 -- -----------------------------------------------------------------------------
 -- HELPER VIEWS
 -- -----------------------------------------------------------------------------
 
 -- Current inventory with product details
-CREATE OR REPLACE VIEW silver.v_current_inventory AS
+CREATE OR REPLACE VIEW ai_systems.stihl_silver.v_current_inventory AS
 SELECT 
     p.product_id,
     p.model_number,
@@ -527,42 +543,25 @@ SELECT
     i.days_of_supply,
     i.avg_daily_sales,
     i.snapshot_date
-FROM silver.dim_products p
-LEFT JOIN silver.fact_inventory_current i 
+FROM ai_systems.stihl_silver.dim_products p
+LEFT JOIN ai_systems.stihl_silver.fact_inventory_current i 
     ON p.product_id = i.product_id
     AND i.snapshot_date = current_date();
 
 -- Latest product performance
-CREATE OR REPLACE VIEW gold.v_latest_product_performance AS
+CREATE OR REPLACE VIEW ai_systems.stihl_gold.v_latest_product_performance AS
 SELECT *
-FROM gold.product_performance
-WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM gold.product_performance);
-
--- -----------------------------------------------------------------------------
--- GRANTS (adjust based on your security model)
--- -----------------------------------------------------------------------------
-
--- Grant usage on catalog
--- GRANT USAGE ON CATALOG stihl TO `data_engineers`;
--- GRANT USAGE ON CATALOG stihl TO `data_scientists`;
--- GRANT USAGE ON CATALOG stihl TO `business_users`;
-
--- Grant schema permissions
--- GRANT ALL PRIVILEGES ON SCHEMA stihl.bronze TO `data_engineers`;
--- GRANT ALL PRIVILEGES ON SCHEMA stihl.silver TO `data_engineers`;
--- GRANT ALL PRIVILEGES ON SCHEMA stihl.gold TO `data_engineers`;
--- GRANT SELECT ON SCHEMA stihl.gold TO `business_users`;
+FROM ai_systems.stihl_gold.product_performance
+WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM ai_systems.stihl_gold.product_performance);
 
 -- -----------------------------------------------------------------------------
 -- VERIFICATION
 -- -----------------------------------------------------------------------------
 
 -- Show created tables
-SHOW TABLES IN stihl.bronze;
-SHOW TABLES IN stihl.silver;
-SHOW TABLES IN stihl.gold;
+SHOW TABLES IN ai_systems.stihl_bronze;
+SHOW TABLES IN ai_systems.stihl_silver;
+SHOW TABLES IN ai_systems.stihl_gold;
 
 -- Verify CDF is enabled on text tables (required for Vector Search)
-DESCRIBE EXTENDED silver.product_details_text;
-DESCRIBE EXTENDED silver.inventory_status_text;
-DESCRIBE EXTENDED silver.sales_summary_text;
+DESCRIBE EXTENDED ai_systems.stihl_silver.product_details_text;

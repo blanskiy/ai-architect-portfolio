@@ -10,10 +10,8 @@
 # MAGIC 2. `inventory_status_text` - Dynamic inventory + pricing (DAILY sync)
 # MAGIC 3. `sales_summary_text` - Monthly sales records (DAILY sync)
 # MAGIC 
-# MAGIC **Key Design Decisions:**
-# MAGIC - Static product specs separated from dynamic pricing/inventory
-# MAGIC - Price lives in inventory_status_text (changes frequently)
-# MAGIC - Text templates designed for semantic similarity matching
+# MAGIC **Catalog:** ai_systems
+# MAGIC **Schema:** stihl_silver
 
 # COMMAND ----------
 
@@ -25,8 +23,14 @@ import uuid
 
 spark = SparkSession.builder.getOrCreate()
 
-CATALOG = "stihl"
-SCHEMA = "silver"
+# Configuration - Using existing ai_systems catalog
+CATALOG = "ai_systems"
+SCHEMA_SILVER = "stihl_silver"
+SCHEMA_GOLD = "stihl_gold"
+
+print(f"Catalog: {CATALOG}")
+print(f"Silver Schema: {SCHEMA_SILVER}")
+print(f"Gold Schema: {SCHEMA_GOLD}")
 
 # COMMAND ----------
 
@@ -37,41 +41,6 @@ SCHEMA = "silver"
 # MAGIC Does NOT include price (that's in inventory_status_text).
 
 # COMMAND ----------
-
-# Text template for product details
-PRODUCT_DETAIL_TEMPLATE = """Product: {product_name}
-Model Number: {model_number}
-Category: {category} > {subcategory}
-Power Type: {power_type}
-Target User: {user_segment}
-{specs_section}
-Description: {description}
-Key Features: {features}
-Product Status: {status_text}
-Launch Date: {launch_date}"""
-
-def generate_product_specs(row):
-    """Generate specifications section based on product type"""
-    specs = []
-    
-    if row.engine_displacement_cc:
-        specs.append(f"Engine: {row.engine_displacement_cc}cc")
-    if row.bar_length_inches:
-        specs.append(f"Bar Length: {row.bar_length_inches} inches")
-    if row.cutting_width_inches:
-        specs.append(f"Cutting Width: {row.cutting_width_inches} inches")
-    if row.weight_lbs:
-        specs.append(f"Weight: {row.weight_lbs} lbs")
-    
-    if specs:
-        return "Specifications: " + ", ".join(specs)
-    return "Specifications: See product manual"
-
-def generate_product_status(row):
-    """Generate status text"""
-    if not row.is_active:
-        return f"Discontinued as of {row.discontinue_date}"
-    return "Currently Active"
 
 # Create UDF for text generation
 @udf(StringType())
@@ -132,7 +101,7 @@ product_text_df = spark.sql(f"""
         launch_date,
         discontinue_date,
         updated_at
-    FROM {CATALOG}.{SCHEMA}.dim_products
+    FROM {CATALOG}.{SCHEMA_SILVER}.dim_products
 """)
 
 product_text_df = product_text_df.withColumn(
@@ -177,10 +146,10 @@ product_text_df = product_text_df.withColumn(
 )
 
 # Write to table
-product_text_df.write.mode("overwrite").saveAsTable(f"{CATALOG}.{SCHEMA}.product_details_text")
+product_text_df.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(f"{CATALOG}.{SCHEMA_SILVER}.product_details_text")
 
 print("Product details text generated:")
-display(spark.table(f"{CATALOG}.{SCHEMA}.product_details_text").limit(3))
+display(spark.table(f"{CATALOG}.{SCHEMA_SILVER}.product_details_text").limit(3))
 
 # COMMAND ----------
 
@@ -279,8 +248,8 @@ inventory_text_df = spark.sql(f"""
         i.is_out_of_stock,
         i.avg_daily_sales,
         i.days_of_supply
-    FROM {CATALOG}.{SCHEMA}.dim_products p
-    JOIN {CATALOG}.{SCHEMA}.fact_inventory_current i
+    FROM {CATALOG}.{SCHEMA_SILVER}.dim_products p
+    JOIN {CATALOG}.{SCHEMA_SILVER}.fact_inventory_current i
         ON p.product_id = i.product_id
     WHERE p.is_active = true
 """)
@@ -338,10 +307,10 @@ inventory_text_df = inventory_text_df.withColumn(
 )
 
 # Write to table (overwrite for current snapshot)
-inventory_text_df.write.mode("overwrite").saveAsTable(f"{CATALOG}.{SCHEMA}.inventory_status_text")
+inventory_text_df.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(f"{CATALOG}.{SCHEMA_SILVER}.inventory_status_text")
 
 print("Inventory status text generated:")
-display(spark.table(f"{CATALOG}.{SCHEMA}.inventory_status_text").limit(3))
+display(spark.table(f"{CATALOG}.{SCHEMA_SILVER}.inventory_status_text").limit(3))
 
 # COMMAND ----------
 
@@ -439,7 +408,7 @@ sales_agg_df = spark.sql(f"""
             SUM(CASE WHEN channel = 'Retail' THEN units_sold ELSE 0 END) as retail_units,
             SUM(CASE WHEN channel = 'Pro Dealer' THEN units_sold ELSE 0 END) as pro_dealer_units,
             SUM(CASE WHEN channel = 'Online' THEN units_sold ELSE 0 END) as online_units
-        FROM {CATALOG}.{SCHEMA}.fact_sales
+        FROM {CATALOG}.{SCHEMA_SILVER}.fact_sales
         GROUP BY product_id, DATE_FORMAT(sale_date, 'yyyy-MM')
     ),
     with_prev AS (
@@ -455,7 +424,7 @@ sales_agg_df = spark.sql(f"""
         p.model_number,
         p.category
     FROM with_prev w
-    JOIN {CATALOG}.{SCHEMA}.dim_products p ON w.product_id = p.product_id
+    JOIN {CATALOG}.{SCHEMA_SILVER}.dim_products p ON w.product_id = p.product_id
 """)
 
 sales_text_df = sales_agg_df.withColumn(
@@ -514,10 +483,10 @@ sales_text_df = sales_agg_df.withColumn(
 )
 
 # Write to table
-sales_text_df.write.mode("overwrite").saveAsTable(f"{CATALOG}.{SCHEMA}.sales_summary_text")
+sales_text_df.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(f"{CATALOG}.{SCHEMA_SILVER}.sales_summary_text")
 
 print("Sales summary text generated:")
-display(spark.table(f"{CATALOG}.{SCHEMA}.sales_summary_text").limit(3))
+display(spark.table(f"{CATALOG}.{SCHEMA_SILVER}.sales_summary_text").limit(3))
 
 # COMMAND ----------
 
@@ -529,29 +498,31 @@ display(spark.table(f"{CATALOG}.{SCHEMA}.sales_summary_text").limit(3))
 print("=" * 60)
 print("TEXT GENERATION SUMMARY")
 print("=" * 60)
+print(f"Catalog: {CATALOG}")
+print(f"Schema: {SCHEMA_SILVER}")
 
 # Count records in each table
 for table in ["product_details_text", "inventory_status_text", "sales_summary_text"]:
-    count = spark.table(f"{CATALOG}.{SCHEMA}.{table}").count()
+    count = spark.table(f"{CATALOG}.{SCHEMA_SILVER}.{table}").count()
     print(f"\n{table}: {count:,} records")
 
 # Sample text from each
 print("\n" + "=" * 60)
 print("SAMPLE TEXT: Product Details")
 print("=" * 60)
-sample_product = spark.table(f"{CATALOG}.{SCHEMA}.product_details_text").first()
+sample_product = spark.table(f"{CATALOG}.{SCHEMA_SILVER}.product_details_text").first()
 print(sample_product.text_content)
 
 print("\n" + "=" * 60)
 print("SAMPLE TEXT: Inventory Status")
 print("=" * 60)
-sample_inv = spark.table(f"{CATALOG}.{SCHEMA}.inventory_status_text").first()
+sample_inv = spark.table(f"{CATALOG}.{SCHEMA_SILVER}.inventory_status_text").first()
 print(sample_inv.text_content)
 
 print("\n" + "=" * 60)
 print("SAMPLE TEXT: Sales Summary")
 print("=" * 60)
-sample_sales = spark.table(f"{CATALOG}.{SCHEMA}.sales_summary_text").first()
+sample_sales = spark.table(f"{CATALOG}.{SCHEMA_SILVER}.sales_summary_text").first()
 print(sample_sales.text_content)
 
 # Verify CDF is enabled
@@ -559,7 +530,7 @@ print("\n" + "=" * 60)
 print("CDF STATUS")
 print("=" * 60)
 for table in ["product_details_text", "inventory_status_text", "sales_summary_text"]:
-    props = spark.sql(f"SHOW TBLPROPERTIES {CATALOG}.{SCHEMA}.{table}").filter("key = 'delta.enableChangeDataFeed'").collect()
+    props = spark.sql(f"SHOW TBLPROPERTIES {CATALOG}.{SCHEMA_SILVER}.{table}").filter("key = 'delta.enableChangeDataFeed'").collect()
     cdf_status = props[0].value if props else "Not set"
     print(f"{table}: CDF = {cdf_status}")
 

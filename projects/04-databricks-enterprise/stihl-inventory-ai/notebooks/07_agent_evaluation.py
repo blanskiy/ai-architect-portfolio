@@ -7,11 +7,8 @@
 # MAGIC 2. **MLflow Agent Evaluation** with AI judges
 # MAGIC 3. **Quality metrics** for retrieval and generation
 # MAGIC 
-# MAGIC Evaluation dimensions:
-# MAGIC - **Relevance**: Does the answer address the question?
-# MAGIC - **Groundedness**: Is the answer supported by retrieved context?
-# MAGIC - **Correctness**: Are the facts accurate?
-# MAGIC - **Query Routing**: Did it search the right index?
+# MAGIC **Catalog:** ai_systems
+# MAGIC **Schema:** stihl_silver, stihl_gold
 
 # COMMAND ----------
 
@@ -20,10 +17,20 @@
 # COMMAND ----------
 
 import mlflow
-from mlflow.metrics.genai import answer_relevance, answer_correctness
 import pandas as pd
 from datetime import datetime
-import json
+from pyspark.sql.functions import current_timestamp
+
+# Configuration
+CATALOG = "ai_systems"
+SCHEMA_SILVER = "stihl_silver"
+SCHEMA_GOLD = "stihl_gold"
+
+print(f"Catalog: {CATALOG}")
+print(f"Silver Schema: {SCHEMA_SILVER}")
+print(f"Gold Schema: {SCHEMA_GOLD}")
+
+# COMMAND ----------
 
 # Import the agent (assumes 06_stihl_agent was run first)
 # In production, load from MLflow registry instead
@@ -33,8 +40,6 @@ import json
 
 # MAGIC %md
 # MAGIC ## 1. Evaluation Test Suite
-# MAGIC 
-# MAGIC Comprehensive test queries organized by persona and expected behavior.
 
 # COMMAND ----------
 
@@ -49,7 +54,7 @@ EVALUATION_SUITE = [
         "query": "Which products are low on stock and need restocking?",
         "expected_index": "inventory_status_index",
         "expected_topics": ["low stock", "reorder", "restocking"],
-        "ground_truth": None  # Will be verified against actual data
+        "ground_truth": None
     },
     {
         "id": "SCM-002",
@@ -111,7 +116,7 @@ EVALUATION_SUITE = [
         "id": "PM-001",
         "persona": "Product Manager",
         "query": "Which chainsaw models have the highest margins?",
-        "expected_index": "inventory_status_index",  # Price/margin in inventory
+        "expected_index": "inventory_status_index",
         "expected_topics": ["chainsaw", "margin", "profit"],
         "ground_truth": None
     },
@@ -198,13 +203,6 @@ print(f"By persona: {pd.DataFrame(EVALUATION_SUITE).groupby('persona').size().to
 def evaluate_query(agent, test_case: dict) -> dict:
     """
     Evaluate a single query against the agent.
-    
-    Returns metrics:
-    - routing_correct: Did it route to the expected index?
-    - response_time_ms: How long did it take?
-    - answer_length: Length of response
-    - topics_covered: Which expected topics were mentioned
-    - topic_coverage_pct: % of expected topics found
     """
     import time
     
@@ -271,7 +269,7 @@ for i, test_case in enumerate(EVALUATION_SUITE, 1):
     evaluation_results.append(result)
     
     # Print quick summary
-    status = "✅" if result["routing_correct"] else "❌"
+    status = "PASS" if result["routing_correct"] else "FAIL"
     print(f"  {status} Routing: {result['indexes_searched']} (expected: {result['expected_index']})")
     print(f"  Topics: {result['topic_coverage_pct']}% | Time: {result['response_time_ms']}ms")
 
@@ -331,25 +329,14 @@ if len(routing_issues) > 0:
         print(f"  {row['id']}: Expected '{row['expected_index']}', got {row['indexes_searched']}")
         print(f"       Query: {row['query'][:60]}...")
 else:
-    print("  ✅ All queries routed correctly!")
+    print("  All queries routed correctly!")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 4. MLflow Agent Evaluation (AI Judges)
+# MAGIC ## 4. MLflow Logging
 
 # COMMAND ----------
-
-# Prepare data for MLflow evaluation
-mlflow_eval_data = eval_df[eval_df["answer"].notna()][["query", "answer"]].rename(
-    columns={"query": "inputs", "answer": "predictions"}
-)
-
-# Create evaluation dataset
-eval_dataset = mlflow.data.from_pandas(
-    mlflow_eval_data,
-    source="stihl_agent_evaluation"
-)
 
 # Run MLflow evaluation with AI judges
 with mlflow.start_run(run_name="stihl_agent_evaluation"):
@@ -376,6 +363,14 @@ with mlflow.start_run(run_name="stihl_agent_evaluation"):
             f"{persona.lower().replace(' ', '_')}_topic_coverage": 
                 persona_data["topic_coverage_pct"].mean()
         })
+    
+    # Log config
+    mlflow.log_params({
+        "catalog": CATALOG,
+        "schema_silver": SCHEMA_SILVER,
+        "schema_gold": SCHEMA_GOLD,
+        "num_test_cases": total_tests
+    })
     
     print("Evaluation metrics logged to MLflow")
 
@@ -411,17 +406,40 @@ for persona in eval_df["persona"].unique():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 6. Export Results
+# MAGIC ## 6. Save Results to Delta
 
 # COMMAND ----------
 
 # Save detailed results to Delta table for tracking over time
-eval_df_spark = spark.createDataFrame(eval_df.astype(str))  # Convert to string for compatibility
+eval_df_spark = spark.createDataFrame(eval_df.astype(str))
 eval_df_spark = eval_df_spark.withColumn("evaluation_timestamp", current_timestamp())
 
-eval_df_spark.write.mode("append").saveAsTable(f"{CATALOG}.gold.agent_evaluation_history")
+# Create table if not exists
+spark.sql(f"""
+    CREATE TABLE IF NOT EXISTS {CATALOG}.{SCHEMA_GOLD}.agent_evaluation_history (
+        id STRING,
+        persona STRING,
+        query STRING,
+        answer STRING,
+        routing_correct STRING,
+        indexes_searched STRING,
+        expected_index STRING,
+        response_time_ms STRING,
+        answer_length STRING,
+        topics_found STRING,
+        topics_expected STRING,
+        topic_coverage_pct STRING,
+        classification_confidence STRING,
+        num_sources STRING,
+        error STRING,
+        evaluation_timestamp TIMESTAMP
+    )
+    USING DELTA
+""")
 
-print(f"Results saved to {CATALOG}.gold.agent_evaluation_history")
+eval_df_spark.write.mode("append").saveAsTable(f"{CATALOG}.{SCHEMA_GOLD}.agent_evaluation_history")
+
+print(f"Results saved to {CATALOG}.{SCHEMA_GOLD}.agent_evaluation_history")
 
 # COMMAND ----------
 
@@ -435,16 +453,22 @@ print("EVALUATION COMPLETE")
 print("=" * 60)
 
 print(f"""
+CONFIGURATION:
+=============
+Catalog: {CATALOG}
+Silver Schema: {SCHEMA_SILVER}
+Gold Schema: {SCHEMA_GOLD}
+
 KEY FINDINGS:
 ============
 1. Routing Accuracy: {routing_accuracy:.1f}%
-   {'✅ Excellent' if routing_accuracy >= 90 else '⚠️ Needs improvement' if routing_accuracy >= 70 else '❌ Poor'}
+   {'EXCELLENT' if routing_accuracy >= 90 else 'NEEDS IMPROVEMENT' if routing_accuracy >= 70 else 'POOR'}
    
 2. Topic Coverage: {avg_topic_coverage:.1f}%
-   {'✅ Good coverage' if avg_topic_coverage >= 60 else '⚠️ Partial coverage' if avg_topic_coverage >= 40 else '❌ Low coverage'}
+   {'GOOD' if avg_topic_coverage >= 60 else 'PARTIAL' if avg_topic_coverage >= 40 else 'LOW'}
 
 3. Response Time: {avg_response_time:.0f}ms
-   {'✅ Fast' if avg_response_time < 2000 else '⚠️ Acceptable' if avg_response_time < 5000 else '❌ Slow'}
+   {'FAST' if avg_response_time < 2000 else 'ACCEPTABLE' if avg_response_time < 5000 else 'SLOW'}
 
 RECOMMENDATIONS:
 ===============
