@@ -1,0 +1,137 @@
+{
+  "timestamp": "2025-12-21T19:27:35.340254",
+  "summaries": [
+    {
+      "engine": "ollama",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "quantization": "Q4",
+      "runs": 9,
+      "avg_ttft_ms": 16024.373477738765,
+      "avg_latency_ms": 203041.1362555266,
+      "avg_tps": 1.5560209627311248,
+      "std_tps": 0.15355470777702415,
+      "p50_latency_ms": 134939.68479998875,
+      "p95_latency_ms": 421751.9749000203,
+      "cost_per_1k_tokens": 0.0
+    }
+  ],
+  "raw_results": [
+    {
+      "engine": "ollama",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "quantization": "Q4",
+      "prompt_tokens": 10,
+      "completion_tokens": 48,
+      "total_tokens": 58,
+      "time_to_first_token_ms": 90116.79049988743,
+      "total_latency_ms": 120636.20269997045,
+      "tokens_per_second": 1.5727694781706647,
+      "cost_per_1k_tokens": 0.0,
+      "timestamp": "2025-12-21T18:59:08.383828"
+    },
+    {
+      "engine": "ollama",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "quantization": "Q4",
+      "prompt_tokens": 10,
+      "completion_tokens": 46,
+      "total_tokens": 56,
+      "time_to_first_token_ms": 2984.4915999565274,
+      "total_latency_ms": 31976.727099972777,
+      "tokens_per_second": 1.5866317035115909,
+      "cost_per_1k_tokens": 0.0,
+      "timestamp": "2025-12-21T18:59:40.380970"
+    },
+    {
+      "engine": "ollama",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "quantization": "Q4",
+      "prompt_tokens": 10,
+      "completion_tokens": 47,
+      "total_tokens": 57,
+      "time_to_first_token_ms": 2314.206499955617,
+      "total_latency_ms": 27212.857499951497,
+      "tokens_per_second": 1.887652467597854,
+      "cost_per_1k_tokens": 0.0,
+      "timestamp": "2025-12-21T19:00:07.594879"
+    },
+    {
+      "engine": "ollama",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "quantization": "Q4",
+      "prompt_tokens": 21,
+      "completion_tokens": 195,
+      "total_tokens": 216,
+      "time_to_first_token_ms": 13266.262899967842,
+      "total_latency_ms": 134969.93139991537,
+      "tokens_per_second": 1.6022524415530175,
+      "cost_per_1k_tokens": 0.0,
+      "timestamp": "2025-12-21T19:02:22.564313"
+    },
+    {
+      "engine": "ollama",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "quantization": "Q4",
+      "prompt_tokens": 21,
+      "completion_tokens": 182,
+      "total_tokens": 203,
+      "time_to_first_token_ms": 2202.41329993587,
+      "total_latency_ms": 134939.68479998875,
+      "tokens_per_second": 1.3711295851062262,
+      "cost_per_1k_tokens": 0.0,
+      "timestamp": "2025-12-21T19:04:37.509294"
+    },
+    {
+      "engine": "ollama",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "quantization": "Q4",
+      "prompt_tokens": 21,
+      "completion_tokens": 192,
+      "total_tokens": 213,
+      "time_to_first_token_ms": 2143.034400069155,
+      "total_latency_ms": 125220.04799998831,
+      "tokens_per_second": 1.5599988526218687,
+      "cost_per_1k_tokens": 0.0,
+      "timestamp": "2025-12-21T19:06:42.731327"
+    },
+    {
+      "engine": "ollama",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "quantization": "Q4",
+      "prompt_tokens": 59,
+      "completion_tokens": 597,
+      "total_tokens": 656,
+      "time_to_first_token_ms": 26831.788899959065,
+      "total_latency_ms": 420157.41959994193,
+      "tokens_per_second": 1.517826333711199,
+      "cost_per_1k_tokens": 0.0,
+      "timestamp": "2025-12-21T19:13:42.889417"
+    },
+    {
+      "engine": "ollama",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "quantization": "Q4",
+      "prompt_tokens": 59,
+      "completion_tokens": 650,
+      "total_tokens": 709,
+      "time_to_first_token_ms": 2091.9675999321043,
+      "total_latency_ms": 421751.9749000203,
+      "tokens_per_second": 1.54887287016416,
+      "cost_per_1k_tokens": 0.0,
+      "timestamp": "2025-12-21T19:20:44.647206"
+    },
+    {
+      "engine": "ollama",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "quantization": "Q4",
+      "prompt_tokens": 59,
+      "completion_tokens": 554,
+      "total_tokens": 613,
+      "time_to_first_token_ms": 2268.4055999852717,
+      "total_latency_ms": 410505.38029999007,
+      "tokens_per_second": 1.3570549321435423,
+      "cost_per_1k_tokens": 0.0,
+      "timestamp": "2025-12-21T19:27:35.157270"
+    }
+  ]
+}
