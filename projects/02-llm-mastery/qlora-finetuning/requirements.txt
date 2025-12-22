@@ -1,0 +1,25 @@
+# QLoRA Fine-tuning Requirements
+# For Google Colab, these are installed in the notebook
+# For local use, install with: pip install -r requirements.txt
+
+# Core ML
+torch>=2.0.0
+transformers>=4.36.0
+accelerate>=0.25.0
+datasets>=2.15.0
+
+# QLoRA specific
+peft>=0.7.0
+bitsandbytes>=0.41.0
+trl>=0.7.0
+
+# Hugging Face
+huggingface_hub>=0.19.0
+
+# Utilities
+scipy>=1.11.0
+matplotlib>=3.7.0
+pandas>=2.0.0
+
+# Optional: For local inference
+# ollama>=0.1.0

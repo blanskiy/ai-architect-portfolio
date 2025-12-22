@@ -1,0 +1,6 @@
+﻿# Large model files (use Hugging Face Hub to store)
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
