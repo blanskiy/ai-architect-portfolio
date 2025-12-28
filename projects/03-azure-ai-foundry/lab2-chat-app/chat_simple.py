@@ -1,22 +1,27 @@
-"""Simple Chat Completion with Azure AI Foundry"""
+"""Simple Chat Completion with Azure OpenAI"""
 
-from azure.ai.projects import AIProjectClient
-from azure.identity import DefaultAzureCredential
+from openai import AzureOpenAI
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from dotenv import load_dotenv
-import os
-
 
 load_dotenv()
 
-# Initialize client
-client = AIProjectClient(
-    credential=DefaultAzureCredential(),
-    endpoint=os.getenv("https://bl-az-foundry.services.ai.azure.com/api/projects/stihl-sales-analytics")
+# Get token provider for Azure AD auth
+token_provider = get_bearer_token_provider(
+    DefaultAzureCredential(),
+    "https://cognitiveservices.azure.com/.default"
+)
+
+# Initialize client - use Azure OpenAI endpoint (not project endpoint!)
+client = AzureOpenAI(
+    azure_endpoint="https://blans-mjiyrqgp-westus.openai.azure.com/",  # Fixed!
+    azure_ad_token_provider=token_provider,
+    api_version="2024-10-21"
 )
 
 # Simple chat completion
-response = client.inference.get_chat_completions(
-    model="gpt-4o",
+response = client.chat.completions.create(
+    model="gpt-4o",  # Your deployment name
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "What is Azure AI Foundry in one sentence?"}

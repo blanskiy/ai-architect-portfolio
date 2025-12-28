@@ -1,0 +1,114 @@
+{
+  "timestamp": "20251228_094331",
+  "model": "gpt-4o",
+  "judge_model": "gpt-4o",
+  "num_samples": 8,
+  "aggregate_metrics": {
+    "groundedness": {
+      "average": 5.0,
+      "min": 5.0,
+      "max": 5.0,
+      "count": 8
+    },
+    "relevance": {
+      "average": 2.25,
+      "min": 2.0,
+      "max": 4.0,
+      "count": 8
+    },
+    "coherence": {
+      "average": 3.38,
+      "min": 2.0,
+      "max": 4.0,
+      "count": 8
+    },
+    "fluency": {
+      "average": 3.88,
+      "min": 3.0,
+      "max": 4.0,
+      "count": 8
+    }
+  },
+  "detailed_results": [
+    {
+      "question": "What was the total revenue in Q1 2024?",
+      "context": "sales data from fact_sales table for January-March 2024",
+      "ground_truth": "Q1 2024 total revenue was approximately $2.4 million across all product categories.",
+      "response": "The context does not provide specific sales data or revenue figures for Q1 2024. Therefore, I cannot determine the total revenue for that period.",
+      "groundedness": 5.0,
+      "relevance": 4.0,
+      "coherence": 4.0,
+      "fluency": 4.0
+    },
+    {
+      "question": "Which product category had the highest sales in 2024?",
+      "context": "product performance rankings from BCG matrix analysis",
+      "ground_truth": "Chainsaws were the top-selling category, representing approximately 35% of total revenue.",
+      "response": "The context does not provide information about sales in 2024 or specific product category performance. Please provide additional details or clarify your request.",
+      "groundedness": 5.0,
+      "relevance": 2.0,
+      "coherence": 3.0,
+      "fluency": 3.0
+    },
+    {
+      "question": "What are the monthly sales trends for power tools?",
+      "context": "monthly_trends aggregated data showing seasonal patterns",
+      "ground_truth": "Power tools show seasonal patterns with peaks in spring (March-May) and fall (September-October) aligned with outdoor project seasons.",
+      "response": "The context provided does not include specific monthly sales trends for power tools. If you could provide more detailed data or specify the seasonal patterns, I can assist further.",
+      "groundedness": 5.0,
+      "relevance": 2.0,
+      "coherence": 3.0,
+      "fluency": 4.0
+    },
+    {
+      "question": "Which products are classified as Stars in the BCG matrix?",
+      "context": "product_performance table BCG classifications",
+      "ground_truth": "MS 271 Farm Boss Chainsaw and BR 800 X Backpack Blower are classified as Stars with high growth and high market share.",
+      "response": "The context does not provide specific information about which products are classified as Stars in the BCG matrix. Please provide more details or refer to the product_performance table for clarification.",
+      "groundedness": 5.0,
+      "relevance": 2.0,
+      "coherence": 3.0,
+      "fluency": 4.0
+    },
+    {
+      "question": "What is the average transaction value?",
+      "context": "calculated from fact_sales transaction data",
+      "ground_truth": "The average transaction value across all sales is approximately $450, with chainsaw transactions averaging higher at $620.",
+      "response": "The context does not provide specific information about the average transaction value. Please provide more details or data to calculate this metric.",
+      "groundedness": 5.0,
+      "relevance": 2.0,
+      "coherence": 4.0,
+      "fluency": 4.0
+    },
+    {
+      "question": "How does dealer performance vary by region?",
+      "context": "regional analysis from sales summary",
+      "ground_truth": "The West region leads in dealer sales volume, followed by Southeast. Midwest shows strongest YoY growth at 12%.",
+      "response": "The provided context does not include specific information about dealer performance by region. Please provide more detailed data or context for an accurate analysis.",
+      "groundedness": 5.0,
+      "relevance": 2.0,
+      "coherence": 2.0,
+      "fluency": 4.0
+    },
+    {
+      "question": "What products should be considered for discontinuation?",
+      "context": "BCG matrix Dogs classification",
+      "ground_truth": "Products in the Dogs quadrant with low growth and low market share, such as older trimmer models, are candidates for phase-out.",
+      "response": "The context provided does not include specific information about STIHL products classified as \"Dogs\" in the BCG matrix or their sales performance. Without data on products with low market share and growth (typical characteristics of \"Dogs\"), I cannot determine which products should be considered for discontinuation. Please provide more detailed sales or market data for analysis.",
+      "groundedness": 5.0,
+      "relevance": 2.0,
+      "coherence": 4.0,
+      "fluency": 4.0
+    },
+    {
+      "question": "What was the YoY growth rate for 2024?",
+      "context": "year-over-year calculations from monthly trends",
+      "ground_truth": "Overall YoY growth for 2024 was 8.3%, with outdoor power equipment showing the strongest growth at 11.2%.",
+      "response": "The context does not provide any information about 2024 or its year-over-year growth rate. Please provide more specific data or clarify your question.",
+      "groundedness": 5.0,
+      "relevance": 2.0,
+      "coherence": 4.0,
+      "fluency": 4.0
+    }
+  ]
+}

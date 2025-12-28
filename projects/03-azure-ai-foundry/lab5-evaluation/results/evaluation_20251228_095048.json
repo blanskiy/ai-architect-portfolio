@@ -1,0 +1,114 @@
+{
+  "timestamp": "20251228_095048",
+  "model": "gpt-4o",
+  "judge_model": "gpt-4o",
+  "num_samples": 8,
+  "aggregate_metrics": {
+    "groundedness": {
+      "average": 5.0,
+      "min": 5.0,
+      "max": 5.0,
+      "count": 8
+    },
+    "relevance": {
+      "average": 4.25,
+      "min": 2.0,
+      "max": 5.0,
+      "count": 8
+    },
+    "coherence": {
+      "average": 4.0,
+      "min": 3.0,
+      "max": 5.0,
+      "count": 8
+    },
+    "fluency": {
+      "average": 3.38,
+      "min": 3.0,
+      "max": 4.0,
+      "count": 8
+    }
+  },
+  "detailed_results": [
+    {
+      "question": "What was the total revenue in Q1 2024?",
+      "context": "Q1 2024 Sales Summary: Total revenue $2,470,000. January: $780,000, February: $820,000, March: $870,000. Top categories: Chainsaws ($890K), Blowers ($620K), Trimmers ($480K). YoY growth: 8.2%.",
+      "ground_truth": "Q1 2024 total revenue was $2.47 million.",
+      "response": "The total revenue in Q1 2024 was $2,470,000.",
+      "groundedness": 5.0,
+      "relevance": 4.0,
+      "coherence": 4.0,
+      "fluency": 3.0
+    },
+    {
+      "question": "Which product category had the highest sales in 2024?",
+      "context": "2024 Product Category Performance: Chainsaws - $3.2M (35% of total), Blowers - $2.1M (23%), Trimmers - $1.8M (20%), Hedge Cutters - $1.1M (12%), Accessories - $0.9M (10%). Chainsaws showed 12% YoY growth, leading all categories.",
+      "ground_truth": "Chainsaws were the top-selling category at 35% of revenue.",
+      "response": "The product category with the highest sales in 2024 was **Chainsaws**, with $3.2M in sales, accounting for 35% of the total.",
+      "groundedness": 5.0,
+      "relevance": 5.0,
+      "coherence": 4.0,
+      "fluency": 3.0
+    },
+    {
+      "question": "What are the monthly sales trends for power tools?",
+      "context": "Monthly Sales Trends 2024: Jan $780K, Feb $820K, Mar $1.1M (spring peak), Apr $1.2M, May $1.15M, Jun $950K, Jul $880K, Aug $920K, Sep $1.3M (fall peak), Oct $1.25M, Nov $890K, Dec $720K. Seasonal pattern driven by landscaping and outdoor project seasons.",
+      "ground_truth": "Power tools show seasonal peaks in spring (March-May) and fall (September-October).",
+      "response": "The provided context does not specify sales trends specifically for power tools. It only provides overall monthly sales trends. If you can provide more detailed data or specify a breakdown by product category, I can assist further.",
+      "groundedness": 5.0,
+      "relevance": 2.0,
+      "coherence": 3.0,
+      "fluency": 4.0
+    },
+    {
+      "question": "Which products are classified as Stars in the BCG matrix?",
+      "context": "BCG Matrix Analysis 2024: STARS (High Growth, High Share): MS 271 Farm Boss Chainsaw (18% growth, 32% share), BR 800 X Backpack Blower (15% growth, 28% share). CASH COWS: MS 170 Chainsaw, BG 50 Blower. QUESTION MARKS: Battery-powered line. DOGS: FS 38 Trimmer (legacy model).",
+      "ground_truth": "MS 271 Farm Boss Chainsaw and BR 800 X Backpack Blower are Stars.",
+      "response": "The products classified as Stars in the BCG matrix are:\n\n1. **MS 271 Farm Boss Chainsaw** with 18% growth and 32% market share.  \n2. **BR 800 X Backpack Blower** with 15% growth and 28% market share.",
+      "groundedness": 5.0,
+      "relevance": 5.0,
+      "coherence": 4.0,
+      "fluency": 3.0
+    },
+    {
+      "question": "What is the average transaction value?",
+      "context": "Transaction Analysis 2024: Overall average transaction value: $450. By category - Chainsaws: $620 avg, Blowers: $380 avg, Trimmers: $290 avg, Accessories: $85 avg. Premium segment (>$500) represents 28% of transactions but 52% of revenue.",
+      "ground_truth": "Average transaction value is $450, with chainsaws averaging $620.",
+      "response": "The average transaction value is $450.",
+      "groundedness": 5.0,
+      "relevance": 4.0,
+      "coherence": 4.0,
+      "fluency": 3.0
+    },
+    {
+      "question": "How does dealer performance vary by region?",
+      "context": "Regional Dealer Performance 2024: WEST - $3.8M total, 245 dealers, highest volume. SOUTHEAST - $3.2M total, 198 dealers, best per-dealer average. MIDWEST - $2.9M total, 176 dealers, 12% YoY growth (highest). NORTHEAST - $2.4M total, 156 dealers, urban market focus.",
+      "ground_truth": "West region leads in volume, Midwest shows strongest YoY growth at 12%.",
+      "response": "Dealer performance varies significantly by region based on total sales, number of dealers, and specific metrics:\n\n1. **WEST**: This region has the highest total sales volume at $3.8M across 245 dealers. However, its large dealer base means the per-dealer average is likely lower compared to other regions.\n\n2. **SOUTHEAST**: While its total sales are slightly lower at $3.2M, the region has the best per-dealer average due to having fewer dealers (198). This indicates stronger individual dealer performance.\n\n3. **MIDWEST**: With $2.9M in total sales across 176 dealers, the Midwest has shown the highest year-over-year growth at 12%. This suggests improving dealer performance and market expansion.\n\n4. **NORTHEAST**: The region has the lowest total sales at $2.4M and the smallest dealer base (156 dealers). Its focus on urban markets may influence its performance metrics, though specific per-dealer averages or growth rates are not provided.\n\nIn summary, the WEST leads in total sales volume, the SOUTHEAST excels in per-dealer performance, the MIDWEST is growing the fastest, and the NORTHEAST has a smaller, urban-focused market.",
+      "groundedness": 5.0,
+      "relevance": 5.0,
+      "coherence": 4.0,
+      "fluency": 4.0
+    },
+    {
+      "question": "What products should be considered for discontinuation?",
+      "context": "Product Lifecycle Analysis: DOGS (Low Growth, Low Share) - Candidates for discontinuation: FS 38 Trimmer (-8% YoY, 3% share), BG 55 Blower (legacy, -12% YoY), HT 101 Pole Pruner (-5% YoY). Recommendation: Phase out over 12 months, migrate customers to newer models.",
+      "ground_truth": "FS 38 Trimmer and other Dogs quadrant products with declining sales should be phased out.",
+      "response": "Based on the provided context, the products that should be considered for discontinuation are:\n\n1. **FS 38 Trimmer**: Showing a -8% Year-over-Year (YoY) decline and holding only a 3% market share.\n2. **BG 55 Blower**: A legacy product with a -12% YoY decline.\n3. **HT 101 Pole Pruner**: Experiencing a -5% YoY decline.\n\nThese products fall under the \"DOGS\" category in the Product Lifecycle Analysis, characterized by low growth and low market share. The recommendation is to phase them out over 12 months and migrate customers to newer models.",
+      "groundedness": 5.0,
+      "relevance": 5.0,
+      "coherence": 4.0,
+      "fluency": 4.0
+    },
+    {
+      "question": "What was the YoY growth rate for 2024?",
+      "context": "Year-over-Year Growth Analysis 2024 vs 2023: Overall revenue growth: 8.3%. By segment - Outdoor Power Equipment: 11.2% (best), Professional Grade: 9.1%, Consumer Grade: 5.8%, Accessories: 4.2%. Market outperformed industry average of 6.1%.",
+      "ground_truth": "Overall YoY growth was 8.3%, with outdoor power equipment at 11.2%.",
+      "response": "The Year-over-Year (YoY) growth rate for 2024 compared to 2023 was **8.3%** overall.",
+      "groundedness": 5.0,
+      "relevance": 4.0,
+      "coherence": 5.0,
+      "fluency": 3.0
+    }
+  ]
+}

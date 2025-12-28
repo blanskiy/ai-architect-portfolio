@@ -1,0 +1,97 @@
+{
+  "timestamp": "20251228_072520",
+  "model": "gpt-4o",
+  "judge_model": "gpt-4o",
+  "num_samples": 8,
+  "aggregate_metrics": {},
+  "detailed_results": [
+    {
+      "question": "What was the total revenue in Q1 2024?",
+      "context": "sales data from fact_sales table for January-March 2024",
+      "ground_truth": "Q1 2024 total revenue was approximately $2.4 million across all product categories.",
+      "response": "The context does not provide specific sales data or revenue figures for January-March 2024 (Q1 2024). Therefore, I cannot determine the total revenue for that period.",
+      "groundedness": null,
+      "relevance": null,
+      "coherence": null,
+      "fluency": null,
+      "error": "DefaultAzureCredential failed to retrieve a token from the included credentials.\nAttempted credentials:\n\tEnvironmentCredential: EnvironmentCredential authentication unavailable. Environment variables are not fully configured.\nVisit https://aka.ms/azsdk/python/identity/environmentcredential/troubleshoot to troubleshoot this issue.\n\tWorkloadIdentityCredential: WorkloadIdentityCredential authentication unavailable. The workload options are not fully configured. See the troubleshooting guide for more information: https://aka.ms/azsdk/python/identity/workloadidentitycredential/troubleshoot. Missing required arguments: 'tenant_id', 'client_id', 'token_file_path'.\n\tManagedIdentityCredential: ManagedIdentityCredential authentication unavailable, no response from the IMDS endpoint.\n\tSharedTokenCacheCredential: SharedTokenCacheCredential authentication unavailable. No accounts were found in the cache.\n\tVisualStudioCodeCredential: VisualStudioCodeCredential requires the 'azure-identity-broker' package to be installed. You must also ensure you have the Azure Resources extension installed and have signed in to Azure via Visual Studio Code.\n\tAzureCliCredential: Failed to invoke the Azure CLI\n\tAzurePowerShellCredential: Az.Account module >= 2.2.0 is not installed\n\tAzureDeveloperCliCredential: Azure Developer CLI could not be found. Please visit https://aka.ms/azure-dev for installation instructions and then,once installed, authenticate to your Azure account using 'azd auth login'.\n\tBrokerCredential: InteractiveBrowserBrokerCredential unavailable. The 'azure-identity-broker' package is required to use brokered authentication.\nTo mitigate this issue, please refer to the troubleshooting guidelines here at https://aka.ms/azsdk/python/identity/defaultazurecredential/troubleshoot."
+    },
+    {
+      "question": "Which product category had the highest sales in 2024?",
+      "context": "product performance rankings from BCG matrix analysis",
+      "ground_truth": "Chainsaws were the top-selling category, representing approximately 35% of total revenue.",
+      "response": "The context does not provide information about sales in 2024 or specific product category performance. Please provide more details or updated data for analysis.",
+      "groundedness": null,
+      "relevance": null,
+      "coherence": null,
+      "fluency": null,
+      "error": "(UserError) CoherenceEvaluator: Either 'conversation' or individual inputs must be provided."
+    },
+    {
+      "question": "What are the monthly sales trends for power tools?",
+      "context": "monthly_trends aggregated data showing seasonal patterns",
+      "ground_truth": "Power tools show seasonal patterns with peaks in spring (March-May) and fall (September-October) aligned with outdoor project seasons.",
+      "response": "The context provided does not include specific monthly sales trends for power tools. Please provide more detailed data or context so I can assist you accurately.",
+      "groundedness": null,
+      "relevance": null,
+      "coherence": null,
+      "fluency": null,
+      "error": "(UserError) CoherenceEvaluator: Either 'conversation' or individual inputs must be provided."
+    },
+    {
+      "question": "Which products are classified as Stars in the BCG matrix?",
+      "context": "product_performance table BCG classifications",
+      "ground_truth": "MS 271 Farm Boss Chainsaw and BR 800 X Backpack Blower are classified as Stars with high growth and high market share.",
+      "response": "The context does not provide specific information about which products are classified as Stars in the BCG matrix. Please provide more details or data for clarification.",
+      "groundedness": null,
+      "relevance": null,
+      "coherence": null,
+      "fluency": null,
+      "error": "(UserError) CoherenceEvaluator: Either 'conversation' or individual inputs must be provided."
+    },
+    {
+      "question": "What is the average transaction value?",
+      "context": "calculated from fact_sales transaction data",
+      "ground_truth": "The average transaction value across all sales is approximately $450, with chainsaw transactions averaging higher at $620.",
+      "response": "The context does not provide specific information about the average transaction value calculated from the sales data. Please provide more details or clarify if you need assistance with calculating it.",
+      "groundedness": null,
+      "relevance": null,
+      "coherence": null,
+      "fluency": null,
+      "error": "(UserError) CoherenceEvaluator: Either 'conversation' or individual inputs must be provided."
+    },
+    {
+      "question": "How does dealer performance vary by region?",
+      "context": "regional analysis from sales summary",
+      "ground_truth": "The West region leads in dealer sales volume, followed by Southeast. Midwest shows strongest YoY growth at 12%.",
+      "response": "The context provided does not include specific information about dealer performance by region. Please provide more detailed data or context for analysis.",
+      "groundedness": null,
+      "relevance": null,
+      "coherence": null,
+      "fluency": null,
+      "error": "(UserError) CoherenceEvaluator: Either 'conversation' or individual inputs must be provided."
+    },
+    {
+      "question": "What products should be considered for discontinuation?",
+      "context": "BCG matrix Dogs classification",
+      "ground_truth": "Products in the Dogs quadrant with low growth and low market share, such as older trimmer models, are candidates for phase-out.",
+      "response": "The context provided does not include specific information about STIHL products classified as \"Dogs\" in the BCG matrix or their sales performance. Without data on low-growth, low-market-share products, I cannot determine which products should be considered for discontinuation.",
+      "groundedness": null,
+      "relevance": null,
+      "coherence": null,
+      "fluency": null,
+      "error": "(UserError) CoherenceEvaluator: Either 'conversation' or individual inputs must be provided."
+    },
+    {
+      "question": "What was the YoY growth rate for 2024?",
+      "context": "year-over-year calculations from monthly trends",
+      "ground_truth": "Overall YoY growth for 2024 was 8.3%, with outdoor power equipment showing the strongest growth at 11.2%.",
+      "response": "The context does not provide data for 2024 or any year-over-year growth rates for that period. Please provide specific sales data or trends for analysis.",
+      "groundedness": null,
+      "relevance": null,
+      "coherence": null,
+      "fluency": null,
+      "error": "(UserError) CoherenceEvaluator: Either 'conversation' or individual inputs must be provided."
+    }
+  ]
+}
