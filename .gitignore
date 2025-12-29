@@ -19,3 +19,6 @@ Thumbs.db
 .venv/
 __pycache__/
 *.pyc
+
+# MCP config with secrets
+mcp_config.json
