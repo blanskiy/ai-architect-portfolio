@@ -1,0 +1,20 @@
+# Lab 8: Prompt Engineering - Dependencies
+
+# Azure OpenAI
+openai>=1.12.0
+
+# Databricks SQL Connector
+databricks-sql-connector>=3.0.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Data validation (for Part 3 structured outputs)
+pydantic>=2.0.0
+
+# Data handling
+pandas>=2.0.0
+
+# Optional: Jupyter support
+jupyter>=1.0.0
+ipykernel>=6.0.0
