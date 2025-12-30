@@ -1,0 +1,255 @@
+name: ML Deployment Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_version:
+        description: 'Model version to deploy'
+        required: true
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      rollback:
+        description: 'Rollback to previous version'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.11'
+  AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+  AZURE_ML_WORKSPACE: ${{ secrets.AZURE_ML_WORKSPACE }}
+  MODEL_NAME: 'stihl-sales-model'
+
+jobs:
+  validate:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    
+    outputs:
+      model_uri: ${{ steps.validate.outputs.model_uri }}
+      previous_version: ${{ steps.validate.outputs.previous_version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Validate Model Version
+        id: validate
+        run: |
+          python src/validate_deployment.py \
+            --model-name "${{ env.MODEL_NAME }}" \
+            --model-version "${{ github.event.inputs.model_version }}" \
+            --environment "${{ github.event.inputs.environment }}" \
+            --output-file validation_results.json
+          
+          echo "model_uri=$(jq -r '.model_uri' validation_results.json)" >> $GITHUB_OUTPUT
+          echo "previous_version=$(jq -r '.previous_version' validation_results.json)" >> $GITHUB_OUTPUT
+      
+      - name: Check Evaluation Status
+        if: github.event.inputs.environment == 'production' && github.event.inputs.rollback != 'true'
+        run: |
+          # Ensure model passed evaluation before production deployment
+          python src/check_evaluation.py \
+            --model-name "${{ env.MODEL_NAME }}" \
+            --model-version "${{ github.event.inputs.model_version }}"
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'staging' || github.event.inputs.environment == 'production'
+    environment: staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Deploy to Staging
+        id: deploy
+        run: |
+          python src/deploy.py \
+            --model-uri "${{ needs.validate.outputs.model_uri }}" \
+            --environment staging \
+            --endpoint-name "${{ env.MODEL_NAME }}-staging" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --workspace "${{ env.AZURE_ML_WORKSPACE }}" \
+            --output-file deploy_staging_results.json
+          
+          echo "endpoint_url=$(jq -r '.endpoint_url' deploy_staging_results.json)" >> $GITHUB_OUTPUT
+      
+      - name: Run Smoke Tests
+        run: |
+          python tests/smoke_test.py \
+            --endpoint-url "${{ steps.deploy.outputs.endpoint_url }}" \
+            --test-cases tests/smoke_test_cases.json
+      
+      - name: Post Staging Summary
+        run: |
+          echo "## 🚀 Deployed to Staging" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Model Version:** ${{ github.event.inputs.model_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Endpoint:** ${{ steps.deploy.outputs.endpoint_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Smoke Tests:** ✅ Passed" >> $GITHUB_STEP_SUMMARY
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [validate, deploy-staging]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'production'
+    environment: production  # Requires manual approval
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Deploy to Production (Blue-Green)
+        id: deploy
+        run: |
+          python src/deploy.py \
+            --model-uri "${{ needs.validate.outputs.model_uri }}" \
+            --environment production \
+            --endpoint-name "${{ env.MODEL_NAME }}-prod" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --workspace "${{ env.AZURE_ML_WORKSPACE }}" \
+            --deployment-strategy blue-green \
+            --initial-traffic-percent 0 \
+            --output-file deploy_prod_results.json
+          
+          echo "endpoint_url=$(jq -r '.endpoint_url' deploy_prod_results.json)" >> $GITHUB_OUTPUT
+          echo "deployment_name=$(jq -r '.deployment_name' deploy_prod_results.json)" >> $GITHUB_OUTPUT
+      
+      - name: Run Production Smoke Tests
+        run: |
+          python tests/smoke_test.py \
+            --endpoint-url "${{ steps.deploy.outputs.endpoint_url }}" \
+            --deployment-name "${{ steps.deploy.outputs.deployment_name }}" \
+            --test-cases tests/smoke_test_cases.json
+      
+      - name: Gradual Traffic Rollout
+        run: |
+          # Gradual rollout: 0% -> 10% -> 50% -> 100%
+          for PERCENT in 10 50 100; do
+            echo "Setting traffic to ${PERCENT}%..."
+            python src/update_traffic.py \
+              --endpoint-name "${{ env.MODEL_NAME }}-prod" \
+              --deployment-name "${{ steps.deploy.outputs.deployment_name }}" \
+              --traffic-percent $PERCENT
+            
+            if [ $PERCENT -lt 100 ]; then
+              echo "Waiting 60 seconds before next increment..."
+              sleep 60
+              
+              # Check metrics
+              python src/check_health.py \
+                --endpoint-name "${{ env.MODEL_NAME }}-prod"
+            fi
+          done
+      
+      - name: Update Model Registry Stage
+        run: |
+          python src/update_model_stage.py \
+            --model-name "${{ env.MODEL_NAME }}" \
+            --model-version "${{ github.event.inputs.model_version }}" \
+            --stage "Production"
+          
+          # Archive previous production version
+          python src/update_model_stage.py \
+            --model-name "${{ env.MODEL_NAME }}" \
+            --model-version "${{ needs.validate.outputs.previous_version }}" \
+            --stage "Archived"
+      
+      - name: Post Production Summary
+        run: |
+          echo "## 🎉 Deployed to Production" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Model Version:** ${{ github.event.inputs.model_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Previous Version:** ${{ needs.validate.outputs.previous_version }} (archived)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Endpoint:** ${{ steps.deploy.outputs.endpoint_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Traffic:** 100%" >> $GITHUB_STEP_SUMMARY
+
+  rollback:
+    name: Rollback
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.event.inputs.rollback == 'true'
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Execute Rollback
+        run: |
+          echo "🔄 Rolling back to version ${{ needs.validate.outputs.previous_version }}"
+          
+          python src/rollback.py \
+            --model-name "${{ env.MODEL_NAME }}" \
+            --target-version "${{ needs.validate.outputs.previous_version }}" \
+            --endpoint-name "${{ env.MODEL_NAME }}-prod"
+      
+      - name: Post Rollback Summary
+        run: |
+          echo "## ⚠️ Rollback Executed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Rolled back to version **${{ needs.validate.outputs.previous_version }}**" >> $GITHUB_STEP_SUMMARY

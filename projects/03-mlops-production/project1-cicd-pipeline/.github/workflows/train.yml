@@ -1,0 +1,155 @@
+name: ML Training Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'configs/**'
+      - 'data/**'
+  schedule:
+    # Weekly retrain: Sunday at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      experiment_name:
+        description: 'MLflow experiment name'
+        required: false
+        default: 'stihl-sales-model'
+      run_evaluation:
+        description: 'Trigger evaluation after training'
+        required: false
+        default: 'true'
+
+env:
+  PYTHON_VERSION: '3.11'
+  MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+
+jobs:
+  train:
+    name: Train Model
+    runs-on: ubuntu-latest
+    
+    outputs:
+      run_id: ${{ steps.train.outputs.run_id }}
+      model_uri: ${{ steps.train.outputs.model_uri }}
+      accuracy: ${{ steps.train.outputs.accuracy }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Configure MLflow
+        run: |
+          echo "MLFLOW_TRACKING_URI=${{ secrets.MLFLOW_TRACKING_URI }}" >> $GITHUB_ENV
+          echo "AZURE_STORAGE_CONNECTION_STRING=${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" >> $GITHUB_ENV
+      
+      - name: Run Training
+        id: train
+        run: |
+          python src/train.py \
+            --config configs/train_config.yaml \
+            --experiment-name ${{ github.event.inputs.experiment_name || 'stihl-sales-model' }} \
+            --output-file training_output.json
+          
+          # Parse outputs for downstream jobs
+          echo "run_id=$(jq -r '.run_id' training_output.json)" >> $GITHUB_OUTPUT
+          echo "model_uri=$(jq -r '.model_uri' training_output.json)" >> $GITHUB_OUTPUT
+          echo "accuracy=$(jq -r '.metrics.accuracy' training_output.json)" >> $GITHUB_OUTPUT
+      
+      - name: Upload Training Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-outputs
+          path: |
+            training_output.json
+            mlruns/
+          retention-days: 30
+      
+      - name: Post Training Summary
+        run: |
+          echo "## 🎯 Training Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Run ID | \`${{ steps.train.outputs.run_id }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Accuracy | ${{ steps.train.outputs.accuracy }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Model URI | \`${{ steps.train.outputs.model_uri }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  register:
+    name: Register Model
+    needs: train
+    runs-on: ubuntu-latest
+    if: ${{ needs.train.outputs.accuracy >= 0.85 }}
+    
+    outputs:
+      model_version: ${{ steps.register.outputs.version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Register Model
+        id: register
+        run: |
+          python src/register.py \
+            --model-uri "${{ needs.train.outputs.model_uri }}" \
+            --model-name "stihl-sales-model" \
+            --run-id "${{ needs.train.outputs.run_id }}" \
+            --output-file register_output.json
+          
+          echo "version=$(jq -r '.version' register_output.json)" >> $GITHUB_OUTPUT
+      
+      - name: Post Registration Summary
+        run: |
+          echo "## 📦 Model Registered" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Model version **${{ steps.register.outputs.version }}** registered to MLflow Model Registry" >> $GITHUB_STEP_SUMMARY
+
+  trigger-evaluation:
+    name: Trigger Evaluation
+    needs: [train, register]
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.run_evaluation != 'false' }}
+    
+    steps:
+      - name: Trigger Evaluation Workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'evaluate.yml',
+              ref: 'main',
+              inputs: {
+                challenger_run_id: '${{ needs.train.outputs.run_id }}',
+                challenger_model_uri: '${{ needs.train.outputs.model_uri }}'
+              }
+            });
+            console.log('Evaluation workflow triggered');

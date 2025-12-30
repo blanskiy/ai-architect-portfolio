@@ -1,0 +1,25 @@
+# MLOps CI/CD Pipeline Dependencies
+
+# Core ML
+scikit-learn>=1.3.0
+pandas>=2.0.0
+numpy>=1.24.0
+joblib>=1.3.0
+
+# MLflow
+mlflow>=2.10.0
+
+# Azure ML (optional - for Azure deployment)
+azure-ai-ml>=1.12.0
+azure-identity>=1.15.0
+
+# Configuration
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Utilities
+requests>=2.31.0

@@ -1,0 +1,157 @@
+name: ML Evaluation Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      challenger_run_id:
+        description: 'MLflow run ID of challenger model'
+        required: true
+      challenger_model_uri:
+        description: 'URI of challenger model'
+        required: true
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'configs/**'
+
+env:
+  PYTHON_VERSION: '3.11'
+  MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+  # Quality gate thresholds
+  MIN_ACCURACY: 0.85
+  MAX_ACCURACY_DROP: 0.01
+  MAX_LATENCY_P95_MS: 100
+  MAX_MODEL_SIZE_MB: 500
+
+jobs:
+  evaluate:
+    name: Evaluate Model
+    runs-on: ubuntu-latest
+    
+    outputs:
+      passed: ${{ steps.gate.outputs.passed }}
+      accuracy: ${{ steps.evaluate.outputs.accuracy }}
+      latency_p95: ${{ steps.evaluate.outputs.latency_p95 }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Download Test Data
+        run: |
+          # Download evaluation dataset
+          python src/download_data.py --dataset eval --output data/eval/
+      
+      - name: Load Champion Model
+        id: champion
+        run: |
+          # Get current production model
+          python src/get_champion.py \
+            --model-name "stihl-sales-model" \
+            --output-file champion_info.json
+          
+          echo "champion_version=$(jq -r '.version' champion_info.json)" >> $GITHUB_OUTPUT
+          echo "champion_accuracy=$(jq -r '.metrics.accuracy' champion_info.json)" >> $GITHUB_OUTPUT
+      
+      - name: Evaluate Challenger
+        id: evaluate
+        run: |
+          python src/evaluate.py \
+            --challenger-uri "${{ github.event.inputs.challenger_model_uri }}" \
+            --champion-model "models:/stihl-sales-model/Production" \
+            --test-data "data/eval/" \
+            --output-file evaluation_results.json
+          
+          # Parse results
+          echo "accuracy=$(jq -r '.challenger.accuracy' evaluation_results.json)" >> $GITHUB_OUTPUT
+          echo "latency_p95=$(jq -r '.challenger.latency_p95_ms' evaluation_results.json)" >> $GITHUB_OUTPUT
+          echo "model_size=$(jq -r '.challenger.model_size_mb' evaluation_results.json)" >> $GITHUB_OUTPUT
+          echo "accuracy_diff=$(jq -r '.comparison.accuracy_diff' evaluation_results.json)" >> $GITHUB_OUTPUT
+      
+      - name: Quality Gate Check
+        id: gate
+        run: |
+          python src/quality_gate.py \
+            --results evaluation_results.json \
+            --min-accuracy ${{ env.MIN_ACCURACY }} \
+            --max-accuracy-drop ${{ env.MAX_ACCURACY_DROP }} \
+            --max-latency-p95 ${{ env.MAX_LATENCY_P95_MS }} \
+            --max-model-size ${{ env.MAX_MODEL_SIZE_MB }} \
+            --output-file gate_results.json
+          
+          PASSED=$(jq -r '.passed' gate_results.json)
+          echo "passed=$PASSED" >> $GITHUB_OUTPUT
+          
+          if [ "$PASSED" = "false" ]; then
+            echo "❌ Quality gate failed"
+            exit 1
+          fi
+      
+      - name: Upload Evaluation Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-report
+          path: |
+            evaluation_results.json
+            gate_results.json
+          retention-days: 90
+      
+      - name: Post Evaluation Summary
+        if: always()
+        run: |
+          echo "## 📊 Model Evaluation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Champion vs Challenger" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Champion (v${{ steps.champion.outputs.champion_version }}) | Challenger | Threshold | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|------------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Accuracy check
+          CHAMP_ACC=${{ steps.champion.outputs.champion_accuracy }}
+          CHALL_ACC=${{ steps.evaluate.outputs.accuracy }}
+          ACC_STATUS=$(python -c "print('✅' if $CHALL_ACC >= $CHAMP_ACC - ${{ env.MAX_ACCURACY_DROP }} else '❌')")
+          echo "| Accuracy | ${CHAMP_ACC} | ${CHALL_ACC} | ≥ ${CHAMP_ACC} - ${{ env.MAX_ACCURACY_DROP }} | ${ACC_STATUS} |" >> $GITHUB_STEP_SUMMARY
+          
+          # Latency check
+          LAT=${{ steps.evaluate.outputs.latency_p95 }}
+          LAT_STATUS=$(python -c "print('✅' if $LAT <= ${{ env.MAX_LATENCY_P95_MS }} else '❌')")
+          echo "| Latency P95 | - | ${LAT}ms | ≤ ${{ env.MAX_LATENCY_P95_MS }}ms | ${LAT_STATUS} |" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Quality Gate: ${{ steps.gate.outputs.passed == 'true' && '✅ PASSED' || '❌ FAILED' }}" >> $GITHUB_STEP_SUMMARY
+
+  notify:
+    name: Notify Results
+    needs: evaluate
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Notify Success
+        if: needs.evaluate.outputs.passed == 'true'
+        run: |
+          echo "✅ Evaluation passed - model ready for deployment"
+          # Add Slack/Teams notification here
+      
+      - name: Notify Failure
+        if: needs.evaluate.outputs.passed != 'true'
+        run: |
+          echo "❌ Evaluation failed - model blocked from deployment"
+          # Add Slack/Teams notification here
