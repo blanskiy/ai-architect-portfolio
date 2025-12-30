@@ -1,0 +1,17 @@
+# Lab 1: Model Selection - Dependencies
+
+# Azure OpenAI SDK
+openai>=1.12.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Data handling
+pandas>=2.0.0
+
+# Optional: Visualization
+matplotlib>=3.7.0
+
+# Optional: Jupyter notebook
+jupyter>=1.0.0
+ipykernel>=6.0.0
