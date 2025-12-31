@@ -1,0 +1,92 @@
+# Model Monitoring Configuration
+# Used by monitoring scripts
+
+# General settings
+model:
+  name: "stihl-sales-model"
+  version: "v4"
+  endpoint: "https://model.azureml.net/score"
+
+# Performance monitoring
+performance:
+  check_interval_seconds: 10
+  window_size: 100
+  
+  thresholds:
+    latency_p95_ms: 100        # Alert if P95 > 100ms
+    latency_p99_ms: 500        # Alert if P99 > 500ms
+    error_rate_percent: 5.0    # Alert if error rate > 5%
+    throughput_min_rps: 10     # Alert if throughput < 10 req/s
+    uptime_percent: 99.0       # Alert if uptime < 99%
+
+# Drift detection
+drift:
+  detection_interval_minutes: 60  # Run drift detection every hour
+  window_size: 1000               # Number of samples to compare
+  
+  thresholds:
+    data_drift_warning: 0.1       # PSI warning threshold
+    data_drift_critical: 0.2      # PSI critical threshold
+    prediction_drift_warning: 0.15
+    prediction_drift_critical: 0.25
+    feature_drift: 0.2            # Per-feature threshold
+  
+  methods:
+    continuous_features: "psi"    # psi, ks
+    categorical_features: "chi2"  # chi2, psi
+  
+  features_to_monitor:
+    - feature_1
+    - feature_2
+    - feature_3
+    - feature_4
+    - feature_5
+
+# Reference data
+reference:
+  data_path: "data/reference/training_sample.csv"
+  predictions_path: "data/reference/training_predictions.csv"
+  refresh_days: 30  # Refresh reference data every 30 days after retrain
+
+# Alerting
+alerting:
+  cooldown_minutes: 15  # Minimum time between same alerts
+  
+  channels:
+    slack:
+      enabled: true
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+      severities: ["warning", "critical"]
+    
+    pagerduty:
+      enabled: true
+      integration_key: "${PAGERDUTY_KEY}"
+      severities: ["critical"]
+    
+    email:
+      enabled: false
+      smtp_host: "smtp.gmail.com"
+      smtp_port: 587
+      sender: "alerts@company.com"
+      recipients:
+        - "ml-team@company.com"
+      severities: ["critical"]
+
+# Prometheus metrics
+prometheus:
+  enabled: true
+  port: 8000
+  path: "/metrics"
+
+# Logging
+logging:
+  level: "INFO"
+  format: "json"
+  output: "stdout"  # stdout, file
+  file_path: "logs/monitoring.log"
+
+# Retention
+retention:
+  metrics_days: 30
+  alerts_days: 90
+  drift_reports_days: 180

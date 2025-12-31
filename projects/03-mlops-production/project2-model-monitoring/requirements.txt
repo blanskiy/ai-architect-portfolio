@@ -1,0 +1,26 @@
+# Model Monitoring Dependencies
+
+# Core data science
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.10.0
+
+# Prometheus metrics
+prometheus-client>=0.19.0
+
+# HTTP requests
+requests>=2.31.0
+
+# Configuration
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# Drift detection (optional, for advanced features)
+# evidently>=0.4.0  # Full-featured drift detection library
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Type hints
+typing-extensions>=4.8.0
