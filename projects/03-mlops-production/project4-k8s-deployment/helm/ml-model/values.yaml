@@ -1,0 +1,143 @@
+# Default values for ml-model
+# Override in values-staging.yaml or values-production.yaml
+
+# Image configuration
+image:
+  repository: myregistry.azurecr.io/ml-model
+  tag: "latest"
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: acr-secret
+
+# Service Account
+serviceAccount:
+  create: true
+  name: ml-model-sa
+  annotations: {}
+
+# Deployment configuration
+replicaCount: 3
+
+# Pod configuration
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# Resource limits
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+
+# Health probes
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+  successThreshold: 1
+
+startupProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  failureThreshold: 30
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: ml-api.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# ConfigMap data
+config:
+  LOG_LEVEL: "INFO"
+  MODEL_PATH: "/app/models"
+  MODEL_NAME: "model.joblib"
+  PORT: "8080"
+  WORKERS: "4"
+
+# Secrets (use external secrets management in production)
+secrets:
+  MLFLOW_TRACKING_PASSWORD: "change-me"
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: ml-model
+          topologyKey: kubernetes.io/hostname
+
+# Volume configuration
+volumes:
+  modelStorage:
+    enabled: true
+    size: 10Gi
+    storageClass: managed-premium

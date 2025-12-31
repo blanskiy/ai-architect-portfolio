@@ -1,0 +1,90 @@
+# Service for ML Model Inference Server
+# Exposes pods and provides load balancing
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-model
+  namespace: ml-production
+  labels:
+    app.kubernetes.io/name: ml-model
+    app.kubernetes.io/component: service
+  annotations:
+    # Prometheus service discovery
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+spec:
+  # ClusterIP for internal access (default)
+  # Use LoadBalancer for external access or Ingress
+  type: ClusterIP
+  
+  # Selector to match pods
+  selector:
+    app.kubernetes.io/name: ml-model
+  
+  # Ports
+  ports:
+  - name: http
+    port: 80           # Service port
+    targetPort: 8080   # Container port
+    protocol: TCP
+  
+  # Session affinity (optional - for stateful requests)
+  # sessionAffinity: ClientIP
+  # sessionAffinityConfig:
+  #   clientIP:
+  #     timeoutSeconds: 3600
+
+---
+# LoadBalancer Service (for direct external access)
+# Use this OR Ingress, not both
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-model-external
+  namespace: ml-production
+  labels:
+    app.kubernetes.io/name: ml-model
+    app.kubernetes.io/component: external-service
+  annotations:
+    # Azure-specific annotations
+    service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+    service.beta.kubernetes.io/azure-dns-label-name: "ml-model-api"
+spec:
+  type: LoadBalancer
+  
+  selector:
+    app.kubernetes.io/name: ml-model
+  
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  
+  # Optional: Restrict to specific IPs
+  # loadBalancerSourceRanges:
+  # - 10.0.0.0/8
+  # - 192.168.0.0/16
+
+---
+# Headless Service (for StatefulSets or direct pod access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-model-headless
+  namespace: ml-production
+  labels:
+    app.kubernetes.io/name: ml-model
+    app.kubernetes.io/component: headless-service
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless
+  
+  selector:
+    app.kubernetes.io/name: ml-model
+  
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080

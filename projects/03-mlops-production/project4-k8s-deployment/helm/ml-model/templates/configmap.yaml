@@ -1,0 +1,32 @@
+{{- define "ml-model.fullname" -}}
+{{- .Release.Name }}-{{ .Chart.Name }}
+{{- end }}
+
+{{- define "ml-model.labels" -}}
+app.kubernetes.io/name: {{ .Chart.Name }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ml-model.fullname" . }}-config
+  labels:
+    {{- include "ml-model.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.config }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "ml-model.fullname" . }}-secrets
+  labels:
+    {{- include "ml-model.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  {{- range $key, $value := .Values.secrets }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

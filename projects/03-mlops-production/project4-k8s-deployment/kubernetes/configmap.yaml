@@ -1,0 +1,29 @@
+# ConfigMap for ML Model configuration
+# Non-sensitive configuration that can be changed without rebuilding image
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ml-model-config
+  namespace: ml-production
+  labels:
+    app.kubernetes.io/name: ml-model
+    app.kubernetes.io/component: config
+data:
+  # Application settings
+  LOG_LEVEL: "INFO"
+  MODEL_PATH: "/app/models"
+  MODEL_NAME: "model.joblib"
+  
+  # Server settings
+  PORT: "8080"
+  WORKERS: "4"
+  
+  # Feature flags
+  ENABLE_BATCH_PREDICTION: "true"
+  ENABLE_METRICS: "true"
+  
+  # Model settings
+  MODEL_VERSION: "v1"
+  MAX_BATCH_SIZE: "100"
+  REQUEST_TIMEOUT: "30"

@@ -1,0 +1,192 @@
+# Deployment for ML Model Inference Server
+# Manages pod replicas, rolling updates, and container configuration
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-model
+  namespace: ml-production
+  labels:
+    app.kubernetes.io/name: ml-model
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: inference
+spec:
+  # Number of replicas (HPA will override this)
+  replicas: 3
+  
+  # Selector to match pods
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ml-model
+  
+  # Rolling update strategy for zero-downtime deployments
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Can create 1 extra pod during update
+      maxUnavailable: 0  # Never have fewer than desired pods
+  
+  # Pod template
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ml-model
+        app.kubernetes.io/version: "1.0.0"
+      annotations:
+        # Force restart when config changes
+        checksum/config: "{{ include (print $.Template.BasePath \"/configmap.yaml\") . | sha256sum }}"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    
+    spec:
+      # Service account for pod identity
+      serviceAccountName: ml-model-sa
+      
+      # Security context for the pod
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      
+      # Graceful termination
+      terminationGracePeriodSeconds: 30
+      
+      # Container definition
+      containers:
+      - name: ml-model
+        image: myregistry.azurecr.io/ml-model:v1
+        imagePullPolicy: Always
+        
+        # Ports
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        
+        # Environment variables from ConfigMap
+        envFrom:
+        - configMapRef:
+            name: ml-model-config
+        
+        # Environment variables from Secrets
+        env:
+        - name: MLFLOW_TRACKING_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ml-model-secrets
+              key: MLFLOW_TRACKING_PASSWORD
+        
+        # Resource requests and limits
+        resources:
+          requests:
+            cpu: "500m"      # 0.5 CPU cores guaranteed
+            memory: "1Gi"    # 1 GB RAM guaranteed
+          limits:
+            cpu: "2"         # Max 2 CPU cores
+            memory: "4Gi"    # Max 4 GB RAM
+        
+        # Liveness probe - "Is the container alive?"
+        # If fails, Kubernetes restarts the container
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30   # Wait 30s before first check
+          periodSeconds: 10         # Check every 10s
+          timeoutSeconds: 5         # Timeout after 5s
+          failureThreshold: 3       # Restart after 3 failures
+        
+        # Readiness probe - "Is the container ready for traffic?"
+        # If fails, Kubernetes removes pod from service endpoints
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10   # Wait 10s for model to load
+          periodSeconds: 5          # Check every 5s
+          timeoutSeconds: 3         # Timeout after 3s
+          failureThreshold: 3       # Remove from LB after 3 failures
+          successThreshold: 1       # Add back after 1 success
+        
+        # Startup probe - for slow-starting containers
+        # Disables liveness/readiness until container starts
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 30      # 30 * 5s = 150s max startup time
+        
+        # Lifecycle hooks
+        lifecycle:
+          # PreStop hook - called before container termination
+          # Allows graceful shutdown and connection draining
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - "sleep 10"  # Wait for LB to stop sending traffic
+        
+        # Volume mounts
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+      
+      # Volumes
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: ml-model-pvc
+      - name: tmp
+        emptyDir: {}
+      
+      # Image pull secrets (for private registry)
+      imagePullSecrets:
+      - name: acr-secret
+      
+      # Node affinity - prefer nodes with specific labels
+      affinity:
+        # Spread pods across nodes
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: ml-model
+              topologyKey: kubernetes.io/hostname
+        
+        # Prefer nodes with SSD storage
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 50
+            preference:
+              matchExpressions:
+              - key: disk-type
+                operator: In
+                values:
+                - ssd
+      
+      # Tolerations for node taints
+      tolerations:
+      - key: "ml-workload"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+
+---
+# Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ml-model-sa
+  namespace: ml-production
+  labels:
+    app.kubernetes.io/name: ml-model

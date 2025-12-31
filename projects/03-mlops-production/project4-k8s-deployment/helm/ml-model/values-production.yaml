@@ -1,0 +1,87 @@
+# Production environment values
+# Override default values for production deployment
+
+image:
+  tag: "v1.0.0"  # Always use specific version in production
+  pullPolicy: IfNotPresent  # Don't always pull if image exists
+
+replicaCount: 3
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+config:
+  LOG_LEVEL: "INFO"
+  MODEL_NAME: "model-production.joblib"
+  WORKERS: "4"
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "50"
+  hosts:
+    - host: ml-api.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: ml-model-production-tls
+      hosts:
+        - ml-api.example.com
+
+# Production-grade storage
+volumes:
+  modelStorage:
+    size: 20Gi
+    storageClass: managed-premium
+
+# Node affinity for production nodes
+nodeSelector:
+  workload-type: ml-inference
+
+tolerations:
+  - key: "ml-workload"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+# Topology spread for high availability
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: ml-model
+        topologyKey: kubernetes.io/hostname
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+            - key: topology.kubernetes.io/zone
+              operator: In
+              values:
+                - us-east-1a
+                - us-east-1b
+                - us-east-1c

@@ -1,0 +1,40 @@
+# Namespace for ML workloads
+# Provides isolation and resource quotas
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ml-production
+  labels:
+    app.kubernetes.io/name: ml-production
+    environment: production
+---
+# Resource Quota for the namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ml-production-quota
+  namespace: ml-production
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: 40Gi
+    limits.cpu: "40"
+    limits.memory: 80Gi
+    pods: "50"
+---
+# Limit Range for default resource limits
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: ml-production-limits
+  namespace: ml-production
+spec:
+  limits:
+  - default:
+      cpu: "1"
+      memory: 2Gi
+    defaultRequest:
+      cpu: "500m"
+      memory: 1Gi
+    type: Container

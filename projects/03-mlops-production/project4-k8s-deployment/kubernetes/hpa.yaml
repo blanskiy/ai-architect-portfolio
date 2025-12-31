@@ -1,0 +1,111 @@
+# Horizontal Pod Autoscaler for ML Model
+# Automatically scales pods based on metrics
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ml-model-hpa
+  namespace: ml-production
+  labels:
+    app.kubernetes.io/name: ml-model
+    app.kubernetes.io/component: autoscaler
+spec:
+  # Reference to the deployment to scale
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ml-model
+  
+  # Replica bounds
+  minReplicas: 3    # Never go below 3 for high availability
+  maxReplicas: 10   # Cap at 10 to control costs
+  
+  # Scaling metrics
+  metrics:
+  # Scale based on CPU utilization
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70  # Target 70% CPU usage
+  
+  # Scale based on memory utilization
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80  # Target 80% memory usage
+  
+  # Custom metric: requests per second (requires Prometheus Adapter)
+  # - type: Pods
+  #   pods:
+  #     metric:
+  #       name: http_requests_per_second
+  #     target:
+  #       type: AverageValue
+  #       averageValue: "100"  # Target 100 RPS per pod
+  
+  # Custom metric: inference latency
+  # - type: Pods
+  #   pods:
+  #     metric:
+  #       name: inference_latency_p95_seconds
+  #     target:
+  #       type: AverageValue
+  #       averageValue: "100m"  # Target 100ms P95 latency
+  
+  # Scaling behavior (fine-tune scale up/down)
+  behavior:
+    # Scale up behavior
+    scaleUp:
+      stabilizationWindowSeconds: 60  # Wait 60s before scaling up again
+      policies:
+      - type: Percent
+        value: 100          # Can double the pods
+        periodSeconds: 60
+      - type: Pods
+        value: 4            # Or add up to 4 pods
+        periodSeconds: 60
+      selectPolicy: Max     # Use whichever allows more pods
+    
+    # Scale down behavior (more conservative)
+    scaleDown:
+      stabilizationWindowSeconds: 300  # Wait 5 min before scaling down
+      policies:
+      - type: Percent
+        value: 25           # Remove at most 25% of pods
+        periodSeconds: 120
+      - type: Pods
+        value: 2            # Or remove at most 2 pods
+        periodSeconds: 120
+      selectPolicy: Min     # Use whichever removes fewer pods
+
+---
+# Alternative: Vertical Pod Autoscaler (VPA)
+# Adjusts resource requests/limits instead of replica count
+# Good for single-instance workloads or determining resource needs
+
+# apiVersion: autoscaling.k8s.io/v1
+# kind: VerticalPodAutoscaler
+# metadata:
+#   name: ml-model-vpa
+#   namespace: ml-production
+# spec:
+#   targetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: ml-model
+#   updatePolicy:
+#     updateMode: "Auto"  # Or "Off" for recommendations only
+#   resourcePolicy:
+#     containerPolicies:
+#     - containerName: ml-model
+#       minAllowed:
+#         cpu: "250m"
+#         memory: "512Mi"
+#       maxAllowed:
+#         cpu: "4"
+#         memory: "8Gi"
+#       controlledResources: ["cpu", "memory"]

@@ -1,0 +1,46 @@
+# Pod Disruption Budget
+# Ensures minimum availability during voluntary disruptions
+# (node upgrades, cluster maintenance, etc.)
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ml-model-pdb
+  namespace: ml-production
+  labels:
+    app.kubernetes.io/name: ml-model
+    app.kubernetes.io/component: pdb
+spec:
+  # Selector to match pods
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ml-model
+  
+  # Minimum available pods (use ONE of minAvailable or maxUnavailable)
+  minAvailable: 2  # Always keep at least 2 pods running
+  
+  # OR: Maximum unavailable pods
+  # maxUnavailable: 1  # At most 1 pod can be down
+  
+  # Note: PDB only affects VOLUNTARY disruptions:
+  # - kubectl drain
+  # - Node upgrades
+  # - Cluster autoscaler scale-down
+  #
+  # PDB does NOT affect INVOLUNTARY disruptions:
+  # - Node crashes
+  # - Out of memory kills
+  # - Container errors
+
+---
+# Example: PDB with percentage
+# apiVersion: policy/v1
+# kind: PodDisruptionBudget
+# metadata:
+#   name: ml-model-pdb-percent
+#   namespace: ml-production
+# spec:
+#   selector:
+#     matchLabels:
+#       app.kubernetes.io/name: ml-model
+#   maxUnavailable: 25%  # At most 25% can be down

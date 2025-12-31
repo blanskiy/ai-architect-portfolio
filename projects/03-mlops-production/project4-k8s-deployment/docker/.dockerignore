@@ -1,0 +1,73 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv/
+ENV/
+.eggs/
+*.egg-info/
+*.egg
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Kubernetes manifests (not needed in image)
+kubernetes/
+helm/
+
+# Scripts
+scripts/
+
+# Notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Data files (models should be mounted or downloaded)
+data/
+*.csv
+*.parquet
+*.pkl
+*.joblib
+
+# Large model files (mount these instead)
+models/*.bin
+models/*.pt
+models/*.onnx
+
+# Logs
+logs/
+*.log
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.docker/
+
+# Misc
+.DS_Store
+Thumbs.db
+*.bak
+*.tmp
