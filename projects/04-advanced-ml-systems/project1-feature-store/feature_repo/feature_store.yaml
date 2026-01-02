@@ -1,0 +1,32 @@
+# Feast Feature Store Configuration
+# This file defines the infrastructure for the feature store
+
+project: stihl_sales_features
+provider: local
+
+# Registry: Where feature definitions are stored
+registry: data/registry.db
+
+# Online Store: For real-time feature serving
+online_store:
+  type: redis
+  connection_string: localhost:6379
+  # For production, use:
+  # type: redis
+  # connection_string: ${REDIS_CONNECTION_STRING}
+
+# Offline Store: For historical feature retrieval
+offline_store:
+  type: file
+  # For production, use:
+  # type: bigquery
+  # project: my-gcp-project
+  # dataset: feast_features
+
+# Entity key serialization
+entity_key_serialization_version: 2
+
+# Feature flags
+flags:
+  alpha_features: true
+  on_demand_transforms: true
