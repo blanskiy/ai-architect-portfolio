@@ -1,185 +1,178 @@
-# 🚀 AI Architect Portfolio: High-Throughput ML Serving System
+# 🚀 AI Architect Portfolio
 
-[![CI/CD Pipeline](https://github.com/blanskiy/ai-architect-portfolio/actions/workflows/ci.yaml/badge.svg)](https://github.com/blanskiy/ai-architect-portfolio/actions)
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
-[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
-[![Kubernetes](https://img.shields.io/badge/kubernetes-deployed-326CE5.svg)](https://kubernetes.io/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Azure](https://img.shields.io/badge/Azure-AI%20%7C%20Databricks-0078D4.svg)](https://azure.microsoft.com/)
+[![MLOps](https://img.shields.io/badge/MLOps-Production%20Ready-green.svg)](https://mlops.community/)
 
-## 🌐 Live Production API
-
-**Azure Cloud Deployment:**
-```
-https://resnet-api.mangobay-4d613d45.westus2.azurecontainerapps.io
-```
-
-### Quick Test
-```bash
-# Health check
-curl https://resnet-api.mangobay-4d613d45.westus2.azurecontainerapps.io/health
-
-# Image classification
-curl -X POST "https://resnet-api.mangobay-4d613d45.westus2.azurecontainerapps.io/predict" \
-  -F "file=@your-image.jpg"
-```
+**End-to-end AI/ML/LLM architecture portfolio demonstrating enterprise-grade systems on Azure + Databricks**
 
 ---
 
-## 📊 Project Overview
+## 📊 Portfolio Overview
 
-A **production-grade ML inference system** built from scratch over 4 weeks, demonstrating enterprise ML engineering skills:
-
-| Component | Technology | Achievement |
-|-----------|------------|-------------|
-| **Model** | ResNet-50 (ImageNet) | 1000-class classification |
-| **Framework** | PyTorch → ONNX | 1.89× speedup |
-| **API** | FastAPI + Async | 7 RPS throughput |
-| **Caching** | Redis | 80% hit rate |
-| **Container** | Docker | Production-ready |
-| **Orchestration** | Kubernetes | Auto-scaling 1-10 pods |
-| **Cloud** | Azure Container Apps | Live deployment |
-| **CI/CD** | GitHub Actions | Automated testing |
-| **MLOps** | MLflow | Model versioning |
+| Month | Focus Area | Projects | Lines of Code |
+|-------|------------|----------|---------------|
+| **Month 1** | ML Systems & Serving | Production API, ONNX, Caching | ~3,000 |
+| **Month 2** | LLMs & Data Engineering | Transformers, RAG, Azure AI Foundry | ~4,500 |
+| **Month 3** | MLOps & Production | CI/CD, Monitoring, A/B Testing, K8s | ~4,800 |
+| **Month 4** | Advanced ML Systems | Feature Store, Model Optimization | ~6,800+ |
+| **Total** | | **15+ Projects** | **~19,000+** |
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    PRODUCTION ML SERVING SYSTEM                             │
+│                    ENTERPRISE AI ARCHITECTURE                               │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│   Client Request                                                            │
-│        │                                                                    │
-│        ▼                                                                    │
-│   ┌─────────────────────────────────────────────────────────────────────┐  │
-│   │              AZURE CONTAINER APPS (West US 2)                        │  │
-│   │        https://resnet-api.mangobay-4d613d45.westus2...              │  │
-│   └─────────────────────────────────────────────────────────────────────┘  │
-│        │                                                                    │
-│        ▼                                                                    │
-│   ┌─────────────────────────────────────────────────────────────────────┐  │
-│   │                    KUBERNETES CLUSTER                                │  │
-│   │   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐            │  │
-│   │   │  Pod 1  │   │  Pod 2  │   │  Pod 3  │   │  ...    │            │  │
-│   │   │ FastAPI │   │ FastAPI │   │ FastAPI │   │         │            │  │
-│   │   └─────────┘   └─────────┘   └─────────┘   └─────────┘            │  │
-│   └─────────────────────────────────────────────────────────────────────┘  │
-│        │                                                                    │
-│        ▼                                                                    │
-│   ┌─────────────────────────────────────────────────────────────────────┐  │
-│   │                    FASTAPI APPLICATION                               │  │
-│   │   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                │  │
-│   │   │   Request   │  │   Redis     │  │   Batch     │                │  │
-│   │   │   Handler   │──│   Cache     │──│   Manager   │                │  │
-│   │   │   (Async)   │  │  (80% hit)  │  │  (Dynamic)  │                │  │
-│   │   └─────────────┘  └─────────────┘  └─────────────┘                │  │
-│   │                           │                                          │  │
-│   │                           ▼                                          │  │
-│   │                    ┌─────────────┐                                   │  │
-│   │                    │ ONNX Runtime│                                   │  │
-│   │                    │ (1.89x fast)│                                   │  │
-│   │                    └─────────────┘                                   │  │
-│   │                           │                                          │  │
-│   │                           ▼                                          │  │
-│   │                    ┌─────────────┐                                   │  │
-│   │                    │  ResNet-50  │                                   │  │
-│   │                    │ (ImageNet)  │                                   │  │
-│   │                    └─────────────┘                                   │  │
-│   └─────────────────────────────────────────────────────────────────────┘  │
+│   DATA LAYER                          AI/ML LAYER                          │
+│   ┌─────────────────┐                ┌─────────────────┐                   │
+│   │ Databricks      │                │ Azure AI Foundry│                   │
+│   │ Unity Catalog   │◄──────────────►│ GPT-4 / OpenAI  │                   │
+│   │ Delta Lake      │                │ Embeddings      │                   │
+│   └─────────────────┘                └─────────────────┘                   │
+│          │                                   │                              │
+│          ▼                                   ▼                              │
+│   ┌─────────────────┐                ┌─────────────────┐                   │
+│   │ ADLS Gen2       │                │ LanceDB         │                   │
+│   │ Lakehouse       │                │ Vector Store    │                   │
+│   └─────────────────┘                └─────────────────┘                   │
+│                                                                             │
+│   MLOPS LAYER                        SERVING LAYER                         │
+│   ┌─────────────────┐                ┌─────────────────┐                   │
+│   │ MLflow          │                │ FastAPI         │                   │
+│   │ Feast           │                │ ONNX Runtime    │                   │
+│   │ GitHub Actions  │                │ Redis Cache     │                   │
+│   └─────────────────┘                └─────────────────┘                   │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ⚡ Performance Metrics
-
-| Metric | Value | Details |
-|--------|-------|---------|
-| **ONNX Speedup** | 1.89× | PyTorch: 697ms → ONNX: 368ms |
-| **Cache Hit Rate** | 80% | Content-based hashing |
-| **Throughput** | 7 RPS | With batching enabled |
-| **P50 Latency** | ~100ms | Typical inference |
-| **P99 Latency** | ~200ms | Worst case |
-| **Model Size** | 97.79 MB | FP32 baseline |
-| **Quantized Size** | 48.90 MB | FP16 (50% reduction) |
-| **Distributed Speedup** | 9.3× | 4 workers vs 1 worker |
-
----
-
 ## 📁 Project Structure
 
 ```
-high-throughput-serving/
-├── src/
-│   ├── api.py                    # FastAPI application
-│   ├── batch_manager.py          # Dynamic batching
-│   ├── cache_manager.py          # Redis caching
-│   ├── download_model.py         # Model downloading
-│   ├── metrics.py                # Prometheus metrics
-│   ├── ab_testing.py             # A/B testing & canary
-│   ├── monitoring_advanced.py    # SLOs & alerting
-│   ├── model_optimization.py     # Quantization
-│   ├── distributed_inference.py  # Worker pools
-│   ├── feature_store.py          # Feature management
-│   └── ml_pipeline.py            # Pipeline orchestration
-├── k8s/
-│   ├── deployment.yaml           # K8s deployment
-│   ├── service.yaml              # K8s service
-│   └── canary-deployment.yaml    # Canary releases
-├── docker/
-│   └── Dockerfile                # Container definition
-├── tests/
-│   ├── test_api.py               # Integration tests
-│   └── test_unit.py              # Unit tests
-├── .github/
-│   └── workflows/
-│       └── ci.yaml               # CI/CD pipeline
-├── models/                       # Model artifacts
-├── mlruns/                       # MLflow tracking
-├── requirements.txt              # Python dependencies
-├── requirements-ci.txt           # CI dependencies
-└── README.md                     # This file
+ai-architect-portfolio/
+├── projects/
+│   ├── 03-azure-ai-foundry/           # Azure AI Foundry Labs
+│   │   ├── lab5-evaluation/           # RAG Evaluation with LLM-as-Judge
+│   │   ├── lab7-mcp/                  # MCP Server Integration
+│   │   └── lab8-prompt-engineering/   # Prompt Engineering Patterns
+│   │
+│   ├── 03-mlops-production/           # MLOps Projects
+│   │   ├── project1-cicd-pipeline/    # GitHub Actions ML Pipeline
+│   │   ├── project2-model-monitoring/ # Drift Detection & Alerts
+│   │   ├── project3-ab-testing/       # Statistical A/B Testing
+│   │   └── project4-k8s-deployment/   # Kubernetes + Helm
+│   │
+│   ├── 03-nlp-transformers/           # NLP & Transformers
+│   │   ├── attention-mechanism/       # Self-Attention Implementation
+│   │   └── rag-lancedb/               # Hybrid RAG with LanceDB
+│   │
+│   ├── 04-advanced-ml-systems/        # Advanced ML
+│   │   ├── project1-feature-store/    # Feast Feature Store
+│   │   └── project2-model-optimization/ # ONNX, Quantization, Pruning
+│   │
+│   └── 04-databricks-enterprise/      # Databricks Integration
+│       └── stihl-inventory-ai/        # STIHL Sales Analytics
+│
+├── architecture-diagrams/             # System Design Diagrams
+├── certifications/                    # Certification Materials
+├── notes/                             # Learning Notes
+└── roadmap/                           # Career Roadmap
 ```
 
 ---
 
-## 🛠️ Technologies Used
+## 🎯 Key Projects
 
-### ML/AI
-- **PyTorch** - Deep learning framework
-- **ONNX Runtime** - Optimized inference
-- **ResNet-50** - Image classification model
-- **MLflow** - Model versioning & registry
+### 1. Feature Store with Feast
+**Location:** `projects/04-advanced-ml-systems/project1-feature-store/`
 
-### Backend
-- **FastAPI** - High-performance async API
-- **Redis** - Distributed caching
-- **Prometheus** - Metrics collection
-- **Uvicorn** - ASGI server
+Production feature store implementation with offline/online serving, point-in-time joins, and Redis online store.
 
-### DevOps
-- **Docker** - Containerization
-- **Kubernetes** - Container orchestration
-- **GitHub Actions** - CI/CD automation
-- **Azure Container Apps** - Cloud deployment
+| Component | Technology |
+|-----------|------------|
+| Feature Store | Feast |
+| Offline Store | Parquet/Delta |
+| Online Store | Redis |
+| Registry | SQLite → Production DB |
 
-### Monitoring
-- **SLOs/SLIs** - Service level objectives
-- **Custom Alerting** - Threshold-based alerts
-- **Performance Dashboards** - Real-time metrics
+### 2. Model Optimization Pipeline
+**Location:** `projects/04-advanced-ml-systems/project2-model-optimization/`
+
+Complete model optimization toolkit for production deployment.
+
+| Technique | Speedup | Size Reduction |
+|-----------|---------|----------------|
+| ONNX Conversion | 2-3x | Same |
+| INT8 Quantization | 2-4x | 4x |
+| FP16 Quantization | 1.5-2x | 2x |
+| Structured Pruning | 2-3x | 2x |
+
+### 3. MLOps CI/CD Pipeline
+**Location:** `projects/03-mlops-production/project1-cicd-pipeline/`
+
+GitHub Actions workflow for ML with experiment tracking, model validation, and blue-green deployment.
+
+```yaml
+Stages: Lint → Test → Train → Validate → Deploy (Blue/Green)
+```
+
+### 4. RAG with LanceDB
+**Location:** `projects/03-nlp-transformers/rag-lancedb/`
+
+Hybrid RAG system with vector + full-text search on Azure ADLS Gen2.
+
+| Component | Technology |
+|-----------|------------|
+| Vector Store | LanceDB |
+| Embeddings | Azure OpenAI |
+| Storage | ADLS Gen2 |
+| Search | Hybrid (Vector + BM25) |
+
+### 5. Azure AI Foundry Integration
+**Location:** `projects/03-azure-ai-foundry/`
+
+Enterprise AI labs including RAG evaluation, MCP servers, and prompt engineering.
+
+---
+
+## 🛠️ Technologies
+
+### AI/ML
+- **Frameworks:** PyTorch, ONNX Runtime, Hugging Face Transformers
+- **Feature Store:** Feast
+- **Experiment Tracking:** MLflow
+- **Vector DB:** LanceDB
+
+### Cloud & Data
+- **Azure:** AI Foundry, ADLS Gen2, Container Apps
+- **Databricks:** Unity Catalog, Delta Lake, Workflows
+- **Storage:** Delta Lake, Parquet, Lance
+
+### MLOps
+- **CI/CD:** GitHub Actions
+- **Containers:** Docker, Kubernetes, Helm
+- **Monitoring:** Prometheus, Custom Drift Detection
+- **Caching:** Redis
+
+### APIs & Serving
+- **Framework:** FastAPI
+- **Optimization:** ONNX, Quantization
+- **Deployment:** Azure Container Apps, Kubernetes
 
 ---
 
 ## 🚀 Quick Start
 
-### Local Development
-
 ```bash
 # Clone repository
 git clone https://github.com/blanskiy/ai-architect-portfolio.git
-cd ai-architect-portfolio/projects/01-foundations/high-throughput-serving
+cd ai-architect-portfolio
 
 # Create virtual environment
 python -m venv .venv
@@ -189,113 +182,58 @@ source .venv/bin/activate  # Linux/Mac
 # Install dependencies
 pip install -r requirements.txt
 
-# Download model
-python src/download_model.py
-
-# Run API
-uvicorn src.api:app --host 0.0.0.0 --port 8000
-```
-
-### Docker
-
-```bash
-# Build image
-docker build -t resnet-serving:latest .
-
-# Run container
-docker run -p 8000:8000 resnet-serving:latest
-```
-
-### Kubernetes
-
-```bash
-# Deploy to cluster
-kubectl apply -f k8s/deployment.yaml -n ml-serving
-kubectl apply -f k8s/service.yaml -n ml-serving
-
-# Check status
-kubectl get pods -n ml-serving
+# Explore projects
+cd projects/04-advanced-ml-systems/project1-feature-store
 ```
 
 ---
 
-## 📖 API Documentation
+## 📚 Learning Journey
 
-### Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | API information |
-| `/health` | GET | Health check |
-| `/predict` | POST | Image classification |
-| `/metrics` | GET | Prometheus metrics |
-| `/docs` | GET | Swagger UI |
-
-### Example Request
-
-```bash
-curl -X POST "http://localhost:8000/predict" \
-  -F "file=@dog.jpg"
-```
-
-### Example Response
-
-```json
-{
-  "success": true,
-  "request_id": "c10e5fc9",
-  "predictions": [
-    {"rank": 1, "class_id": 258, "class_name": "Samoyed", "confidence": 0.8733},
-    {"rank": 2, "class_id": 259, "class_name": "Pomeranian", "confidence": 0.0303}
-  ],
-  "latency_ms": 172.19,
-  "inference_ms": 128.96,
-  "model": "ResNet-50",
-  "batched": true
-}
-```
-
----
-
-## 📚 4-Week Learning Journey
-
-### Week 1: ML Foundations
-- ✅ ResNet-50 model integration
-- ✅ FastAPI REST API
-- ✅ Dynamic batching (up to 32 images)
+### Month 1: ML Foundations
+- ✅ ResNet-50 inference API
+- ✅ ONNX optimization (1.89x speedup)
 - ✅ Redis caching (80% hit rate)
-- ✅ Prometheus monitoring
-
-### Week 2: Production Ready
 - ✅ Docker containerization
-- ✅ Performance optimization
-- ✅ ONNX Runtime (1.89× speedup)
-- ✅ Azure cloud deployment
-- ✅ Live production URL
 
-### Week 3: MLOps & Kubernetes
-- ✅ Kubernetes deployment
-- ✅ CI/CD with GitHub Actions
-- ✅ MLflow model versioning
-- ✅ A/B testing & canary deployments
-- ✅ SLOs, SLIs, and alerting
+### Month 2: LLMs & Data Engineering
+- ✅ Transformer architecture (self-attention)
+- ✅ RAG with LanceDB + Azure OpenAI
+- ✅ Azure AI Foundry labs (evaluation, agents)
+- ✅ Databricks Unity Catalog integration
 
-### Week 4: Advanced Systems
-- ✅ Model quantization (50% size reduction)
-- ✅ Distributed inference (9.3× throughput)
-- ✅ Feature store implementation
-- ✅ ML pipeline orchestration
-- ✅ Portfolio completion
+### Month 3: MLOps
+- ✅ CI/CD pipeline with GitHub Actions
+- ✅ Model monitoring & drift detection
+- ✅ A/B testing framework
+- ✅ Kubernetes deployment with Helm
+
+### Month 4: Advanced Systems
+- ✅ Feature Store with Feast
+- ✅ Model Optimization (ONNX, Quantization, Pruning)
+- 🔄 Vector Database (Advanced Patterns)
+- ⏳ Caching & Serving Optimization
 
 ---
 
-## 🎯 Key Achievements
+## 🎯 Target Roles
 
-1. **Production Deployment** - Live API on Azure with auto-scaling
-2. **Performance Optimization** - 1.89× speedup with ONNX
-3. **Distributed Systems** - 9.3× throughput with 4 workers
-4. **MLOps Pipeline** - End-to-end automation with CI/CD
-5. **Enterprise Patterns** - Feature stores, A/B testing, SLOs
+| Company | Role | Focus Areas |
+|---------|------|-------------|
+| Microsoft | AI Platform Architect | Azure AI, MLOps, Enterprise Scale |
+| Apple | ML Infrastructure | Model Optimization, Feature Stores |
+| Tesla | AI Systems Engineer | Real-time ML, Edge Deployment |
+
+---
+
+## 📈 Key Metrics
+
+| Metric | Achievement |
+|--------|-------------|
+| Total Lines of Code | 19,000+ |
+| Projects Completed | 15+ |
+| Azure Services Used | 8+ |
+| Interview Topics Covered | 50+ |
 
 ---
 
@@ -303,7 +241,7 @@ curl -X POST "http://localhost:8000/predict" \
 
 **Bruce Lanskiy**
 - GitHub: [@blanskiy](https://github.com/blanskiy)
-- Target Companies: Apple, Tesla, Microsoft
+- LinkedIn: [Connect](https://linkedin.com/in/blanskiy)
 
 ---
 
